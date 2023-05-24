@@ -16,13 +16,12 @@
 
 package org.gradle.api.internal.artifacts.transform;
 
-import org.gradle.internal.execution.UnitOfWork;
 import org.gradle.internal.hash.HashCode;
 import org.gradle.internal.hash.Hasher;
 import org.gradle.internal.hash.Hashing;
 import org.gradle.internal.snapshot.ValueSnapshot;
 
-class MutableTransformWorkspaceIdentity implements UnitOfWork.Identity {
+class MutableTransformWorkspaceIdentity implements TransformWorkspaceIdentity {
     private final String inputArtifactAbsolutePath;
     private final ValueSnapshot secondaryInputsSnapshot;
     private final HashCode dependenciesHash;
@@ -40,6 +39,11 @@ class MutableTransformWorkspaceIdentity implements UnitOfWork.Identity {
         secondaryInputsSnapshot.appendToHasher(hasher);
         hasher.putHash(dependenciesHash);
         return hasher.hash().toString();
+    }
+
+    @Override
+    public ValueSnapshot getSecondaryInputsSnapshot() {
+        return secondaryInputsSnapshot;
     }
 
     @Override
