@@ -25,6 +25,7 @@ import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.ExpandDetails;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FilePermissions;
+import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.DefaultConfigurableFilePermissions;
@@ -52,6 +53,7 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
 
     private DefaultConfigurableFilePermissions permissions;
     private DuplicatesStrategy duplicatesStrategy;
+    private LinksStrategy preserveLinks;
 
     @Inject
     public DefaultFileCopyDetails(FileVisitDetails fileDetails, CopySpecResolver specResolver, ObjectFactory objectFactory, Chmod chmod) {
@@ -62,6 +64,7 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
         this.objectFactory = objectFactory;
         this.duplicatesStrategy = specResolver.getDuplicatesStrategy();
         this.defaultDuplicatesStrategy = specResolver.isDefaultDuplicateStrategy();
+        this.preserveLinks = specResolver.getPreserveLinks();
     }
 
     @Override
@@ -91,6 +94,11 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
     @Override
     public boolean isDirectory() {
         return fileDetails.isDirectory();
+    }
+
+    @Override
+    public boolean isSymbolicLink() {
+        return fileDetails.isSymbolicLink();
     }
 
     @Override
@@ -132,8 +140,13 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
         if (filterChain.hasFilters()) {
             return super.copyTo(target);
         } else {
-            final boolean copied = fileDetails.copyTo(target);
-            adaptPermissions(target);
+            final boolean copied;
+            if (preserveLinks.shouldBePreserved(getFile().toPath())) { //TODO: fix for zip
+                copied = fileDetails.copySymlinkTo(target); //TODO: permissions?
+            } else {
+                copied = fileDetails.copyTo(target);
+                adaptPermissions(target);
+            }
             return copied;
         }
     }

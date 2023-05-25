@@ -81,6 +81,11 @@ public class SingleFileTreeElementMatcher {
         }
 
         @Override
+        public boolean isSymbolicLink() {
+            return Files.isSymbolicLink(file.toPath());
+        }
+
+        @Override
         public long getLastModified() {
             return file.lastModified();
         }

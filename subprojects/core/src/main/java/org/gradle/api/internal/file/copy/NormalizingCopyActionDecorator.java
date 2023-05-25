@@ -31,6 +31,7 @@ import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.internal.file.Chmod;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FilterReader;
 import java.io.InputStream;
@@ -87,7 +88,7 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         });
     }
 
-    private void maybeVisit(RelativePath path, boolean includeEmptyDirs, CopyActionProcessingStreamAction delegateAction, Set<RelativePath> visitedDirs, ListMultimap<RelativePath, FileCopyDetailsInternal> pendingDirs) {
+    private void maybeVisit(@Nullable RelativePath path, boolean includeEmptyDirs, CopyActionProcessingStreamAction delegateAction, Set<RelativePath> visitedDirs, ListMultimap<RelativePath, FileCopyDetailsInternal> pendingDirs) {
         if (path == null || path.getParent() == null || !visitedDirs.add(path)) {
             return;
         }
@@ -133,6 +134,11 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         @Override
         public boolean isDirectory() {
             return !path.isFile();
+        }
+
+        @Override
+        public boolean isSymbolicLink() {
+            return false; //TODO
         }
 
         @Override

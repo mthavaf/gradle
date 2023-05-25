@@ -30,9 +30,12 @@ import org.gradle.cache.internal.DecompressionCache;
 import org.gradle.internal.file.Chmod;
 import org.gradle.internal.hash.FileHasher;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
@@ -155,6 +158,24 @@ public class ZipFileTree extends AbstractArchiveFileTree {
         @Override
         protected ZipArchiveEntry getArchiveEntry() {
             return entry;
+        }
+
+        @Override
+        public boolean isSymbolicLink() {
+            return entry.isUnixSymlink();
+        }
+
+        @Override
+        public boolean copySymlinkTo(File target) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            copyTo(baos);
+            Path targetPath = new File(baos.toString().replace("/", File.separator)).toPath();
+            try {
+                Files.createSymbolicLink(target.toPath(), targetPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return true;
         }
 
         @Override

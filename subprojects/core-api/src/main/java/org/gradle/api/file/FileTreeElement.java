@@ -18,8 +18,12 @@ package org.gradle.api.file;
 import org.gradle.api.Incubating;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.StandardCopyOption;
 
 /**
  * Information about a file in a directory/file tree.
@@ -38,6 +42,12 @@ public interface FileTreeElement {
      * @return true if this element is a directory.
      */
     boolean isDirectory();
+
+    /**
+     * @return true if this element is a symbolic link.
+     */
+    boolean isSymbolicLink(); //TODO: is it nessesary?
+    //String getSymbolicLinkTarget();
 
     /**
      * Returns the last modified time of this file at the time of file traversal.
@@ -76,6 +86,15 @@ public interface FileTreeElement {
      * @return true if this file was copied, false if it was up-to-date
      */
     boolean copyTo(File target);
+
+    default boolean copySymlinkTo(File target) { //FIXME: shouldn't be here
+        try {
+            Files.copy(getFile().toPath(), target.toPath(), StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING, LinkOption.NOFOLLOW_LINKS);
+            return true;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Returns the base name of this file.

@@ -48,6 +48,11 @@ public class UnauthorizedFileVisitDetails implements FileVisitDetails {
     }
 
     @Override
+    public boolean isSymbolicLink() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long getLastModified() {
         throw new UnsupportedOperationException();
     }

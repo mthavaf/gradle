@@ -200,6 +200,11 @@ public class TarFileTree extends AbstractArchiveFileTree {
         }
 
         @Override
+        public boolean isSymbolicLink() {
+            return false;
+        }
+
+        @Override
         public InputStream open() {
             if (read) {
                 getFile();

@@ -101,6 +101,11 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         }
 
         @Override
+        public boolean isSymbolicLink() {
+            return false;
+        }
+
+        @Override
         public long getLastModified() {
             return getFile().lastModified();
         }
@@ -178,6 +183,11 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         @Override
         public boolean isDirectory() {
             return isDirectory;
+        }
+
+        @Override
+        public boolean isSymbolicLink() {
+            return !isDirectory() && Files.isSymbolicLink(path);
         }
 
         @Override

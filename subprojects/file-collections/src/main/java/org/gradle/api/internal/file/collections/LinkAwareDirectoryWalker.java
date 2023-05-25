@@ -21,6 +21,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
+import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
 import org.gradle.api.specs.Spec;
@@ -33,11 +34,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ReproducibleDirectoryWalker implements DirectoryWalker {
+public class LinkAwareDirectoryWalker implements DirectoryWalker {
     private final FileSystem fileSystem;
 
-    public ReproducibleDirectoryWalker(FileSystem fileSystem) {
+    public LinkAwareDirectoryWalker(FileSystem fileSystem) {
         this.fileSystem = fileSystem;
+    }
+
+    static boolean shouldVisit(FileTreeElement element, Spec<? super FileTreeElement> spec) {
+        return spec.isSatisfiedBy(element);
     }
 
     @Nullable
@@ -51,10 +56,18 @@ public class ReproducibleDirectoryWalker implements DirectoryWalker {
 
     @Override
     public void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<? super FileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
+        LinksStrategy linksStrategy = visitor.getLinksStrategy() == null ? LinksStrategy.NONE : visitor.getLinksStrategy();
         File[] children = getChildren(file);
         if (children == null) {
             if (file.isDirectory() && !file.canRead()) {
                 throw new GradleException(String.format("Could not list contents of directory '%s' as it is not readable.", file));
+            }
+            if (linksStrategy.shouldBePreserved(file.toPath())) {
+                FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, fileSystem);
+                if (shouldVisit(details, spec)) {
+                    visitor.visitFile(details);
+                }
+                return;
             }
             // else, might be a link which points to nothing, or has been removed while we're visiting, or ...
             throw new GradleException(String.format("Could not list contents of '%s'.", file));
@@ -65,8 +78,8 @@ public class ReproducibleDirectoryWalker implements DirectoryWalker {
             boolean isFile = child.isFile();
             RelativePath childPath = path.append(isFile, child.getName());
             FileVisitDetails details = new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, fileSystem);
-            if (DirectoryFileTree.isAllowed(details, spec)) {
-                if (isFile) {
+            if (shouldVisit(details, spec)) {
+                if (isFile || linksStrategy.shouldBePreserved(child.toPath())) {
                     visitor.visitFile(details);
                 } else {
                     dirs.add(details);

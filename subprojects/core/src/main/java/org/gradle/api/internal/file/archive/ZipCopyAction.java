@@ -22,6 +22,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.gradle.api.GradleException;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FileCopyDetails;
+import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.internal.DocumentationRegistry;
 import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
 import org.gradle.api.internal.file.copy.CopyAction;
@@ -33,7 +34,10 @@ import org.gradle.api.tasks.WorkResults;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.internal.IoActions;
 
+import javax.annotation.Nullable;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
@@ -60,13 +64,22 @@ public class ZipCopyAction implements CopyAction {
     private final DocumentationRegistry documentationRegistry;
     private final String encoding;
     private final boolean preserveFileTimestamps;
+    private final LinksStrategy linksStrategy;
 
-    public ZipCopyAction(File zipFile, ZipCompressor compressor, DocumentationRegistry documentationRegistry, String encoding, boolean preserveFileTimestamps) {
+    public ZipCopyAction(
+        File zipFile,
+        ZipCompressor compressor,
+        DocumentationRegistry documentationRegistry,
+        @Nullable String encoding,
+        boolean preserveFileTimestamps,
+        @Nullable LinksStrategy linksStrategy
+    ) {
         this.zipFile = zipFile;
         this.compressor = compressor;
         this.documentationRegistry = documentationRegistry;
         this.encoding = encoding;
         this.preserveFileTimestamps = preserveFileTimestamps;
+        this.linksStrategy = linksStrategy == null ? LinksStrategy.NONE : linksStrategy;
     }
 
     @Override
@@ -81,7 +94,7 @@ public class ZipCopyAction implements CopyAction {
 
         try {
             IoActions.withResource(zipOutStr, outputStream -> {
-                stream.process(new StreamAction(outputStream, encoding));
+                stream.process(new StreamAction(outputStream, encoding, linksStrategy));
             });
         } catch (UncheckedIOException e) {
             if (e.getCause() instanceof Zip64RequiredException) {
@@ -96,12 +109,14 @@ public class ZipCopyAction implements CopyAction {
 
     private class StreamAction implements CopyActionProcessingStreamAction {
         private final ZipArchiveOutputStream zipOutStr;
+        private final LinksStrategy linksStrategy;
 
-        public StreamAction(ZipArchiveOutputStream zipOutStr, String encoding) {
+        public StreamAction(ZipArchiveOutputStream zipOutStr, @Nullable String encoding, LinksStrategy linksStrategy) {
             this.zipOutStr = zipOutStr;
             if (encoding != null) {
                 this.zipOutStr.setEncoding(encoding);
             }
+            this.linksStrategy = linksStrategy;
         }
 
         @Override
@@ -117,9 +132,21 @@ public class ZipCopyAction implements CopyAction {
             try {
                 ZipArchiveEntry archiveEntry = new ZipArchiveEntry(fileDetails.getRelativePath().getPathString());
                 archiveEntry.setTime(getArchiveTimeFor(fileDetails));
-                archiveEntry.setUnixMode(UnixStat.FILE_FLAG | fileDetails.getImmutablePermissions().toUnixNumeric());
+                boolean isSymlink = linksStrategy.shouldBePreserved(fileDetails.getFile().toPath()); //FIXME: reading links
+                int mode = fileDetails.getImmutablePermissions().toUnixNumeric();
+                if (isSymlink) {
+                    mode |= UnixStat.LINK_FLAG;
+                } else {
+                    mode |= UnixStat.FILE_FLAG;
+                }
+                archiveEntry.setUnixMode(mode);
                 zipOutStr.putArchiveEntry(archiveEntry);
-                fileDetails.copyTo(zipOutStr);
+                if (isSymlink) {
+                    Path path = Files.readSymbolicLink(fileDetails.getFile().toPath()); //FIXME
+                    zipOutStr.write(path.toString().getBytes());
+                } else {
+                    fileDetails.copyTo(zipOutStr);
+                }
                 zipOutStr.closeArchiveEntry();
             } catch (Exception e) {
                 throw new GradleException(String.format("Could not add %s to ZIP '%s'.", fileDetails, zipFile), e);

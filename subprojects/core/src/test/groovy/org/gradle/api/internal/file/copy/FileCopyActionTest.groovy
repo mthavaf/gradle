@@ -35,7 +35,7 @@ class FileCopyActionTest extends Specification {
     }
 
     def plainCopy() {
-        FileCopyAction visitor = new FileCopyAction(TestFiles.resolver(destDir))
+        FileCopyAction visitor = new FileCopyAction(TestFiles.resolver(destDir), linksStrategy)
 
         expect:
         visit(visitor,

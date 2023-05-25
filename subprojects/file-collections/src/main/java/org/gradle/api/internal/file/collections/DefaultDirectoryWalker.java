@@ -20,6 +20,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
+import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AttributeBasedFileVisitDetails;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
@@ -40,6 +41,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultDirectoryWalker implements DirectoryWalker {
@@ -59,7 +61,14 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
 
         try {
             PathVisitor pathVisitor = new PathVisitor(directoryDetailsHolder, spec, postfix, visitor, stopFlag, rootPath, fileSystem);
-            Files.walkFileTree(rootDir.toPath(), EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, pathVisitor);
+            Set<FileVisitOption> visitOptions;
+            LinksStrategy linksStrategy = visitor.getLinksStrategy();
+            if (linksStrategy == null || !linksStrategy.preserveAny()) {
+                visitOptions = EnumSet.of(FileVisitOption.FOLLOW_LINKS);
+            } else {
+                visitOptions = EnumSet.noneOf(FileVisitOption.class);
+            }
+            Files.walkFileTree(rootDir.toPath(), visitOptions, Integer.MAX_VALUE, pathVisitor);
         } catch (IOException e) {
             throw new GradleException(String.format("Could not list contents of directory '%s'.", rootDir), e);
         }
@@ -107,11 +116,8 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             FileVisitDetails details = getFileVisitDetails(file, attrs, false);
+            System.out.println("Visiting " + file);
             if (shouldVisit(details, spec)) {
-                if (attrs.isSymbolicLink()) {
-                    // when FileVisitOption.FOLLOW_LINKS, we only get here when link couldn't be followed
-                    throw new GradleException(String.format("Couldn't follow symbolic link '%s'.", file));
-                }
                 visitor.visitFile(details);
             }
             return checkStopFlag();

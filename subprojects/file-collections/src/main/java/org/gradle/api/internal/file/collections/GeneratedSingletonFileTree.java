@@ -196,6 +196,11 @@ public class GeneratedSingletonFileTree implements FileSystemMirroringFileTree, 
         }
 
         @Override
+        public boolean isSymbolicLink() {
+            return false;
+        }
+
+        @Override
         public long getLastModified() {
             getFile();
             return lastModified;

@@ -24,6 +24,7 @@ import org.gradle.util.internal.GFileUtils;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Files;
 
 public class DefaultFileTreeElement extends AbstractFileTreeElement {
     private final File file;
@@ -65,6 +66,11 @@ public class DefaultFileTreeElement extends AbstractFileTreeElement {
     @Override
     public boolean isDirectory() {
         return !relativePath.isFile();
+    }
+
+    @Override
+    public boolean isSymbolicLink() {
+        return Files.isSymbolicLink(file.toPath());
     }
 
     @Override

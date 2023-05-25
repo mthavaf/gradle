@@ -98,7 +98,7 @@ public class SingleIncludePatternFileTree implements MinimalFileTree, LocalFileT
             DirectoryFileTree fileTree = new DirectoryFileTree(baseDir, patternSet, fileSystem);
             fileTree.visitFrom(visitor, file, new RelativePath(file.isFile(), relativePath.toArray(new String[relativePath.size()])));
         } else if (segment.contains("*") || segment.contains("?")) {
-            PatternStep step = PatternStepFactory.getStep(segment, false);
+            PatternStep step = PatternStepFactory.getStep(segment, false); //TODO: this is a copy paste
             File[] children = file.listFiles();
             if (children == null) {
                 if (!file.canRead()) {

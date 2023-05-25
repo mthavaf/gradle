@@ -15,6 +15,8 @@
  */
 package org.gradle.api.file;
 
+import javax.annotation.Nullable;
+
 /**
  * <p>A {@code FileVisitor} is used to visit each of the files in a {@link FileTree}.</p>
  */
@@ -32,4 +34,9 @@ public interface FileVisitor {
      * @param fileDetails Meta-info about the file.
      */
     void visitFile(FileVisitDetails fileDetails);
+
+    @Nullable
+    default LinksStrategy getLinksStrategy() {
+        return LinksStrategy.NONE;
+    }
 }

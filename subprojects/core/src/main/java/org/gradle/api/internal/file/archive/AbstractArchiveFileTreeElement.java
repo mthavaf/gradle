@@ -70,7 +70,11 @@ public abstract class AbstractArchiveFileTreeElement extends AbstractFileTreeEle
             file = new File(expandedDir, safeEntryName());
             if (!file.exists()) {
                 GFileUtils.mkdirs(file.getParentFile());
-                copyTo(file);
+                if (isSymbolicLink()) {
+                    copySymlinkTo(file);
+                } else {
+                    copyTo(file);
+                }
             }
         }
         return file;
