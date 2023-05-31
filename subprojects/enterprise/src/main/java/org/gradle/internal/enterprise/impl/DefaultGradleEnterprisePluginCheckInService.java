@@ -54,6 +54,14 @@ public class DefaultGradleEnterprisePluginCheckInService implements GradleEnterp
         MINIMUM_SUPPORTED_PLUGIN_VERSION_FOR_CONFIGURATION_CACHING.getMajor(),
         MINIMUM_SUPPORTED_PLUGIN_VERSION_FOR_CONFIGURATION_CACHING.getMinor());
 
+    // Gradle versions 9+ are not compatible Gradle Enterprise plugin < 3.13.1
+    public static final VersionNumber MINIMUM_SUPPORTED_PLUGIN_VERSION = VersionNumber.parse("3.13.1");
+    public static final String UNSUPPORTED_PLUGIN_MESSAGE = String.format("The Gradle Enterprise plugin has been disabled as it is " +
+            "incompatible with this version of Gradle - please upgrade to version %s.%s.%s or later of the Gradle Enterprise plugin to restore functionality.",
+        MINIMUM_SUPPORTED_PLUGIN_VERSION.getMajor(),
+        MINIMUM_SUPPORTED_PLUGIN_VERSION.getMinor(),
+        MINIMUM_SUPPORTED_PLUGIN_VERSION.getMicro());
+
     @Override
     public GradleEnterprisePluginCheckInResult checkIn(GradleEnterprisePluginMetadata pluginMetadata, GradleEnterprisePluginServiceFactory serviceFactory) {
         if (Boolean.getBoolean(UNSUPPORTED_TOGGLE)) {
@@ -62,7 +70,16 @@ public class DefaultGradleEnterprisePluginCheckInService implements GradleEnterp
                 throw new IllegalStateException();
             });
         }
-        if (isUnsupportedWithConfigurationCaching(pluginMetadata)) {
+
+        VersionNumber pluginBaseVersion = VersionNumber.parse(pluginMetadata.getVersion()).getBaseVersion();
+        if (isUnsupportedForCurrentGradle(pluginBaseVersion)) {
+            manager.unsupported();
+            return checkInResult(UNSUPPORTED_PLUGIN_MESSAGE, () -> {
+                throw new IllegalStateException();
+            });
+        }
+
+        if (isUnsupportedWithConfigurationCaching(pluginBaseVersion)) {
             manager.unsupported();
             return checkInResult(UNSUPPORTED_PLUGIN_DUE_TO_CONFIGURATION_CACHING_MESSAGE, () -> {
                 throw new IllegalStateException();
@@ -87,9 +104,12 @@ public class DefaultGradleEnterprisePluginCheckInService implements GradleEnterp
         };
     }
 
-    private boolean isUnsupportedWithConfigurationCaching(GradleEnterprisePluginMetadata pluginMetadata) {
-        VersionNumber version = VersionNumber.parse(pluginMetadata.getVersion()).getBaseVersion();
-        return isConfigurationCacheEnabled && MINIMUM_SUPPORTED_PLUGIN_VERSION_FOR_CONFIGURATION_CACHING.compareTo(version) > 0;
+    private static boolean isUnsupportedForCurrentGradle(VersionNumber pluginBaseVersion) {
+        return MINIMUM_SUPPORTED_PLUGIN_VERSION.compareTo(pluginBaseVersion) > 0;
+    }
+
+    private boolean isUnsupportedWithConfigurationCaching(VersionNumber pluginBaseVersion) {
+        return isConfigurationCacheEnabled && MINIMUM_SUPPORTED_PLUGIN_VERSION_FOR_CONFIGURATION_CACHING.compareTo(pluginBaseVersion) > 0;
     }
 
 }
