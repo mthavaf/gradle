@@ -16,13 +16,9 @@
 
 package org.gradle.smoketests
 
-import org.gradle.api.JavaVersion
-import org.gradle.api.internal.DocumentationRegistry
+
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
-import org.gradle.internal.reflect.validation.ValidationMessageChecker
-import org.gradle.util.GradleVersion
 import org.gradle.util.internal.VersionNumber
-import spock.lang.Issue
 
 import static org.gradle.api.internal.DocumentationRegistry.RECOMMENDATION
 import static org.gradle.internal.reflect.validation.Severity.WARNING
@@ -31,7 +27,7 @@ import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE
 import static org.junit.Assume.assumeFalse
 import static org.junit.Assume.assumeTrue
 
-class KotlinPluginSmokeTest extends AbstractPluginValidatingSmokeTest implements ValidationMessageChecker {
+class KotlinPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
 
     def 'kotlin jvm (kotlin=#version, workers=#workers)'() {
         given:
@@ -226,127 +222,12 @@ class KotlinPluginSmokeTest extends AbstractPluginValidatingSmokeTest implements
         kotlinVersion << TestedVersions.kotlin.versions
     }
 
-    /**
-     * This tests that the usage of deprecated methods in {@code org.gradle.api.tasks.testing.TestReport} task
-     * is okay, and ensures the methods are not removed until the versions of the kotlin plugin that uses them
-     * is no longer tested.
-     *
-     * See usage here: https://cs.android.com/android-studio/kotlin/+/master:libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/testing/internal/KotlinTestReport.kt;l=136?q=KotlinTestReport.kt:136&ss=android-studio
-     */
-    @Issue("https://github.com/gradle/gradle/issues/22246")
-    def 'ensure kotlin multiplatform allTests aggregation task can be created (kotlin=#kotlinVersion)'() {
-        given:
-        buildFile << """
-            plugins {
-                id 'org.jetbrains.kotlin.multiplatform' version '$kotlinVersion'
-            }
-
-            ${mavenCentralRepository()}
-
-            kotlin {
-                jvm()
-            }
-        """
-
-        when:
-        def result = runner(false, VersionNumber.parse(kotlinVersion), ':tasks')
-            .deprecations(KotlinDeprecations) {
-                expectOrgGradleUtilWrapUtilDeprecation(kotlinVersion)
-                expectTestReportReportOnDeprecation(kotlinVersion)
-                expectTestReportDestinationDirOnDeprecation(kotlinVersion)
-                expectProjectConventionDeprecation(kotlinVersion)
-                expectConventionTypeDeprecation(kotlinVersion)
-                expectJavaPluginConventionDeprecation(kotlinVersion)
-                expectBuildIdentifierNameDeprecation(kotlinVersion)
-            }
-            .build()
-
-        then:
-        result.task(':tasks').outcome == SUCCESS
-        result.output.contains('allTests - Runs the tests for all targets and create aggregated report')
-
-        where:
-        kotlinVersion << TestedVersions.kotlin.versions
-    }
-
-    @Issue("https://github.com/gradle/gradle/issues/22952")
-    def "kotlin project can consume kotlin multiplatform java project"() {
-        given:
-        buildFile << """
-            plugins {
-                id 'org.jetbrains.kotlin.jvm' version '$kotlinVersion'
-            }
-
-            ${mavenCentralRepository()}
-
-            dependencies {
-                implementation project(":other")
-            }
-
-            task resolve {
-                def files = configurations.compileClasspath
-                doLast {
-                    println("Files: " + files.files)
-                }
-            }
-        """
-
-        settingsFile << "include 'other'"
-        file("other/build.gradle") << """
-            plugins {
-                id 'org.jetbrains.kotlin.multiplatform'
-            }
-
-            ${mavenCentralRepository()}
-
-            kotlin {
-                jvm {
-                    withJava()
-                }
-            }
-        """
-
-        when:
-        def versionNumber = VersionNumber.parse(kotlinVersion)
-        def testRunner = runner(false, versionNumber, ':resolve', '--stacktrace')
-
-        if (versionNumber < VersionNumber.parse('1.7.22')) {
-            testRunner.expectLegacyDeprecationWarning("The AbstractCompile.destinationDir property has been deprecated. This is scheduled to be removed in Gradle 9.0. " +
-                "Please use the destinationDirectory property instead. " +
-                "Consult the upgrading guide for further information: ${new DocumentationRegistry().getDocumentationFor("upgrading_version_7", "compile_task_wiring")}")
-        }
-
-        testRunner.deprecations(KotlinDeprecations) {
-            expectOrgGradleUtilWrapUtilDeprecation(kotlinVersion)
-            2.times {
-                expectProjectConventionDeprecation(kotlinVersion)
-                expectConventionTypeDeprecation(kotlinVersion)
-                expectJavaPluginConventionDeprecation(kotlinVersion)
-            }
-            expectConfigureUtilDeprecation(kotlinVersion)
-            expectBuildIdentifierNameDeprecation(kotlinVersion)
-        }
-
-        def result = testRunner.build()
-
-        then:
-        result.output.contains("other-jvm.jar")
-
-        where:
-        // withJava is incompatible pre 1.6.20 since it attempts to set the `archiveName` convention property on the Jar task.
-        kotlinVersion << TestedVersions.kotlin.versions.findAll { VersionNumber.parse(it) > VersionNumber.parse("1.6.10") }
-    }
-
-    private SmokeTestGradleRunner runner(boolean workers, VersionNumber kotlinVersion, String... tasks) {
-        return runnerFor(this, workers, kotlinVersion, tasks)
-    }
 
     @Override
     Map<String, Versions> getPluginsToValidate() {
         [
             'org.jetbrains.kotlin.jvm': TestedVersions.kotlin,
             'org.jetbrains.kotlin.js': TestedVersions.kotlin,
-            'org.jetbrains.kotlin.multiplatform': TestedVersions.kotlin,
             'org.jetbrains.kotlin.android': TestedVersions.kotlin,
             'org.jetbrains.kotlin.android.extensions': TestedVersions.kotlin,
             'org.jetbrains.kotlin.kapt': TestedVersions.kotlin,
@@ -475,162 +356,5 @@ class KotlinPluginSmokeTest extends AbstractPluginValidatingSmokeTest implements
 
     private static boolean isAndroidKotlinPlugin(String pluginId) {
         return pluginId.contains('android')
-    }
-
-    static class KotlinDeprecations extends BaseDeprecations implements WithKotlinDeprecations {
-        public static final DocumentationRegistry DOC_REGISTRY = new DocumentationRegistry()
-
-        private static final String ARCHIVE_NAME_DEPRECATION = "The AbstractArchiveTask.archiveName property has been deprecated. " +
-            "This is scheduled to be removed in Gradle 8.0. Please use the archiveFileName property instead. " +
-            String.format(RECOMMENDATION, "information", DOC_REGISTRY.getDslRefForProperty("org.gradle.api.tasks.bundling.AbstractArchiveTask", "archiveName"))
-
-        KotlinDeprecations(SmokeTestGradleRunner runner) {
-            super(runner)
-        }
-
-        void expectKotlinArchiveNameDeprecation(String kotlinPluginVersion) {
-            VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinPluginVersion)
-            runner.expectLegacyDeprecationWarningIf(kotlinVersionNumber.minor == 3, ARCHIVE_NAME_DEPRECATION)
-        }
-
-        void expectKotlin2JsPluginDeprecation(String version) {
-            VersionNumber versionNumber = VersionNumber.parse(version)
-            runner.expectLegacyDeprecationWarningIf(versionNumber >= VersionNumber.parse('1.4.0'),
-                "The `kotlin2js` Gradle plugin has been deprecated."
-            )
-        }
-
-        void expectKotlinParallelTasksDeprecation(String version) {
-            VersionNumber versionNumber = VersionNumber.parse(version)
-            runner.expectLegacyDeprecationWarningIf(
-                versionNumber >= VersionNumber.parse('1.5.20') && versionNumber <= VersionNumber.parse('1.6.10'),
-                "Project property 'kotlin.parallel.tasks.in.project' is deprecated."
-            )
-        }
-
-        void expectAbstractCompileDestinationDirDeprecation(String version) {
-            VersionNumber versionNumber = VersionNumber.parse(version)
-            runner.expectLegacyDeprecationWarningIf(
-                versionNumber <= VersionNumber.parse("1.6.21"),
-                "The AbstractCompile.destinationDir property has been deprecated. " +
-                    "This is scheduled to be removed in Gradle 9.0. " +
-                    "Please use the destinationDirectory property instead. " +
-                    "Consult the upgrading guide for further information: ${DOC_REGISTRY.getDocumentationFor("upgrading_version_7", "compile_task_wiring")}"
-            )
-        }
-
-        void expectOrgGradleUtilWrapUtilDeprecation(String version) {
-            VersionNumber versionNumber = VersionNumber.parse(version)
-            runner.expectLegacyDeprecationWarningIf(
-                versionNumber < VersionNumber.parse("1.7.20"),
-                "The org.gradle.util.WrapUtil type has been deprecated. " +
-                    "This is scheduled to be removed in Gradle 9.0. " +
-                    "Consult the upgrading guide for further information: " +
-                    "${DOC_REGISTRY.getDocumentationFor("upgrading_version_7", "org_gradle_util_reports_deprecations")}"
-            )
-        }
-
-        void expectTestReportReportOnDeprecation(String version) {
-            VersionNumber versionNumber = VersionNumber.parse(version)
-            runner.expectLegacyDeprecationWarningIf(
-                versionNumber.baseVersion < VersionNumber.parse("1.8.20"),
-                "The TestReport.reportOn(Object...) method has been deprecated. " +
-                    "This is scheduled to be removed in Gradle 9.0. " +
-                    "Please use the testResults method instead. " +
-                    String.format(RECOMMENDATION,"information",  DOC_REGISTRY.getDslRefForProperty("org.gradle.api.tasks.testing.TestReport", "testResults"))
-            )
-        }
-
-        void expectTestReportDestinationDirOnDeprecation(String version) {
-            VersionNumber versionNumber = VersionNumber.parse(version)
-            runner.expectLegacyDeprecationWarningIf(
-                versionNumber.baseVersion < VersionNumber.parse("1.8.20"),
-                "The TestReport.destinationDir property has been deprecated. " +
-                    "This is scheduled to be removed in Gradle 9.0. " +
-                    "Please use the destinationDirectory property instead. " +
-                    String.format(RECOMMENDATION, "information", DOC_REGISTRY.getDslRefForProperty("org.gradle.api.tasks.testing.TestReport", "destinationDir"))
-            )
-        }
-
-        void expectProjectConventionDeprecation(String kotlinVersion) {
-            VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-            runner.expectLegacyDeprecationWarningIf(
-                kotlinVersionNumber < VersionNumber.parse("1.7.22"),
-                PROJECT_CONVENTION_DEPRECATION
-            )
-        }
-
-        void expectBasePluginConventionDeprecation(String kotlinVersion) {
-            VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-            runner.expectLegacyDeprecationWarningIf(
-                kotlinVersionNumber < VersionNumber.parse("1.7.0"),
-                BASE_PLUGIN_CONVENTION_DEPRECATION
-            )
-        }
-
-        void expectBasePluginConventionDeprecation(String kotlinVersion, String agpVersion) {
-            VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-            VersionNumber agpVersionNumber = VersionNumber.parse(agpVersion)
-            runner.expectLegacyDeprecationWarningIf(
-                agpVersionNumber < VersionNumber.parse("7.4.0") || kotlinVersionNumber < VersionNumber.parse("1.7.0"),
-                BASE_PLUGIN_CONVENTION_DEPRECATION
-            )
-        }
-
-        void expectJavaPluginConventionDeprecation(String kotlinVersion) {
-            VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-            runner.expectLegacyDeprecationWarningIf(
-                kotlinVersionNumber < VersionNumber.parse("1.7.22"),
-                JAVA_PLUGIN_CONVENTION_DEPRECATION
-            )
-        }
-
-        void expectProjectConventionDeprecation(String kotlinVersion, String agpVersion) {
-            VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-            VersionNumber agpVersionNumber = VersionNumber.parse(agpVersion)
-            runner.expectLegacyDeprecationWarningIf(
-                agpVersionNumber < VersionNumber.parse("7.4.0") || (agpVersionNumber >= VersionNumber.parse("7.4.0") && kotlinVersionNumber < VersionNumber.parse("1.7.0")),
-                PROJECT_CONVENTION_DEPRECATION
-            )
-        }
-
-        void expectConventionTypeDeprecation(String kotlinVersion) {
-            VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-            runner.expectLegacyDeprecationWarningIf(
-                kotlinVersionNumber < VersionNumber.parse("1.7.22"),
-                CONVENTION_TYPE_DEPRECATION
-            )
-        }
-
-        void expectConventionTypeDeprecation(String kotlinVersion, String agpVersion) {
-            VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-            VersionNumber agpVersionNumber = VersionNumber.parse(agpVersion)
-            runner.expectLegacyDeprecationWarningIf(
-                agpVersionNumber < VersionNumber.parse("7.4.0") || (agpVersionNumber >= VersionNumber.parse("7.4.0") && kotlinVersionNumber < VersionNumber.parse("1.7.22")),
-                CONVENTION_TYPE_DEPRECATION
-            )
-        }
-
-        void expectConfigureUtilDeprecation(String version) {
-            VersionNumber versionNumber = VersionNumber.parse(version)
-            runner.expectLegacyDeprecationWarningIf(
-                versionNumber < VersionNumber.parse("1.7.22"),
-                "The org.gradle.util.ConfigureUtil type has been deprecated. " +
-                    "This is scheduled to be removed in Gradle 9.0. " +
-                    "Consult the upgrading guide for further information: " +
-                    DOC_REGISTRY.getDocumentationFor("upgrading_version_8", "org_gradle_util_reports_deprecations")
-            )
-        }
-
-        void expectBuildIdentifierNameDeprecation(String kotlinVersion) {
-            VersionNumber versionNumber = VersionNumber.parse(kotlinVersion)
-            runner.expectDeprecationWarningIf(versionNumber >= VersionNumber.parse("1.8.20"),
-                "The BuildIdentifier.getName() method has been deprecated. " +
-                    "This is scheduled to be removed in Gradle 9.0. " +
-                    "Use getBuildPath() to get a unique identifier for the build. " +
-                    "Consult the upgrading guide for further information: https://docs.gradle.org/${GradleVersion.current().version}/userguide/upgrading_version_8.html#build_identifier_name_and_current_deprecation",
-                "https://youtrack.jetbrains.com/issue/KT-58157"
-            )
-        }
     }
 }
