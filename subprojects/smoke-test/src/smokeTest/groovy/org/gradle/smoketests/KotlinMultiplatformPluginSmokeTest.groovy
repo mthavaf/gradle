@@ -23,6 +23,28 @@ import spock.lang.Issue
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
+    def 'test kotlin multiplatform with js project (kotlin=#kotlinVersion)'() {
+        given:
+        withKotlinBuildFile()
+        useSample("kotlin-multiplatform-js-example")
+
+        def kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
+        replaceVariablesInBuildFile(kotlinVersion: kotlinVersion)
+        replaceCssSupportBlocksInBuildFile(kotlinVersionNumber)
+
+        when:
+        def result = runner(Workers.OMIT, kotlinVersionNumber, ':tasks')
+            .deprecations(KotlinDeprecations) {
+                expectVersionSpecificDeprecations(kotlinVersionNumber)
+            }
+            .build()
+
+        then:
+        result.task(':tasks').outcome == SUCCESS
+
+        where:
+        kotlinVersion << TestedVersions.kotlin.versions
+    }
 
     /**
      * This tests that the usage of deprecated methods in {@code org.gradle.api.tasks.testing.TestReport} task
@@ -47,7 +69,7 @@ class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
         """
 
         when:
-        def result = runner(false, VersionNumber.parse(kotlinVersion), ':tasks')
+        def result = runner(Workers.OMIT, VersionNumber.parse(kotlinVersion), ':tasks')
                 .deprecations(KotlinDeprecations) {
                     expectOrgGradleUtilWrapUtilDeprecation(kotlinVersion)
                     expectTestReportReportOnDeprecation(kotlinVersion)
@@ -163,5 +185,26 @@ class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
                 }
             """
         }
+    }
+
+    private String replaceCssSupportBlocksInBuildFile(kotlinVersion) {
+        Map<String, String> replacementMap = [:]
+        if (kotlinVersion >= VersionNumber.parse('1.8.0')) {
+            replacementMap['enableCssSupportNew'] = """
+            commonWebpackConfig {
+                cssSupport {
+                    enabled.set(true)
+                }
+            }
+"""
+            replacementMap['enableCssSupportOld'] = ''
+        } else {
+            replacementMap['enableCssSupportOld'] = """
+                    webpackConfig.cssSupport.enabled = true
+"""
+            replacementMap['enableCssSupportNew'] = ''
+        }
+
+        replaceVariablesInBuildFile(replacementMap)
     }
 }

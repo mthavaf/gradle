@@ -180,22 +180,59 @@ abstract class AbstractKotlinPluginSmokeTest extends AbstractPluginValidatingSmo
                 "https://youtrack.jetbrains.com/issue/KT-58157"
             )
         }
+
+        void expectVersionSpecificDeprecations(VersionNumber kotlinVersion) {
+            if (kotlinVersion <= VersionNumber.parse("1.7.0")) {
+                expectOrgGradleUtilWrapUtilDeprecation(kotlinVersion.toString())
+                expectConventionTypeDeprecation(kotlinVersion.toString())
+                expectJavaPluginConventionDeprecation(kotlinVersion.toString())
+                expectAbstractCompileDestinationDirDeprecation(kotlinVersion.toString())
+            }
+            if (kotlinVersion <= VersionNumber.parse("1.7.22")) {
+                expectProjectConventionDeprecation(kotlinVersion.toString())
+            }
+            if (kotlinVersion <= VersionNumber.parse("1.8.0")) {
+                expectTestReportReportOnDeprecation(kotlinVersion.toString())
+                expectTestReportDestinationDirOnDeprecation(kotlinVersion.toString())
+            }
+            if (kotlinVersion > VersionNumber.parse("1.8.0")) {
+                expectBuildIdentifierNameDeprecation(kotlinVersion.toString())
+            }
+        }
     }
 
-    protected SmokeTestGradleRunner runner(boolean workers, VersionNumber kotlinVersion, String... tasks) {
+    protected SmokeTestGradleRunner runner(Workers workers, VersionNumber kotlinVersion, String... tasks) {
         return runnerFor(this, workers, kotlinVersion, tasks)
     }
 
-    protected SmokeTestGradleRunner runnerFor(AbstractSmokeTest smokeTest, boolean workers, String... tasks) {
-        smokeTest.runner(tasks + ["--parallel", "-Pkotlin.parallel.tasks.in.project=$workers"] as String[])
+    protected SmokeTestGradleRunner runnerFor(AbstractSmokeTest smokeTest, Workers workers, String... tasks) {
+        def args = ['--parallel']
+        switch (workers) {
+            case Workers.TRUE: {
+                args += ['-Pkotlin.parallel.tasks.in.project=true']
+                break
+            }
+            case Workers.FALSE: {
+                args += ['-Pkotlin.parallel.tasks.in.project=false']
+                break
+            }
+        }
+
+        smokeTest.runner(tasks + args as String[])
             .forwardOutput()
     }
 
-    protected SmokeTestGradleRunner runnerFor(AbstractSmokeTest smokeTest, boolean workers, VersionNumber kotlinVersion, String... tasks) {
+    protected SmokeTestGradleRunner runnerFor(AbstractSmokeTest smokeTest, Workers workers, VersionNumber kotlinVersion, String... tasks) {
         if (kotlinVersion.getMinor() < 5 && JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_16)) {
             String kotlinOpts = "-Dkotlin.daemon.jvm.options=--add-exports=java.base/sun.nio.ch=ALL-UNNAMED,--add-opens=java.base/java.util=ALL-UNNAMED"
             return runnerFor(smokeTest, workers, tasks + [kotlinOpts] as String[])
         }
         runnerFor(smokeTest, workers, tasks)
+    }
+
+    protected static enum Workers {
+        TRUE,
+        FALSE,
+        OMIT
     }
 }
