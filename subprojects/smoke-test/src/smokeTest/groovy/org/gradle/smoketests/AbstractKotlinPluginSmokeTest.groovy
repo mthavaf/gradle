@@ -21,19 +21,21 @@ import org.gradle.internal.reflect.validation.ValidationMessageChecker
 import org.gradle.util.internal.VersionNumber
 
 abstract class AbstractKotlinPluginSmokeTest extends AbstractPluginValidatingSmokeTest implements ValidationMessageChecker {
+    private static final String PARALLEL_TASKS_IN_PROJECT_PROPERTY = 'kotlin.parallel.tasks.in.project'
+
     protected SmokeTestGradleRunner runner(ParallelTasksInProject parallelTasksInProject, VersionNumber kotlinVersion, String... tasks) {
         return runnerFor(this, parallelTasksInProject, kotlinVersion, tasks)
     }
 
-    protected SmokeTestGradleRunner runnerFor(AbstractSmokeTest smokeTest, ParallelTasksInProject parallelTasksInProject, String... tasks) {
+    protected static SmokeTestGradleRunner runnerFor(AbstractSmokeTest smokeTest, ParallelTasksInProject parallelTasksInProject, String... tasks) {
         def args = ['--parallel']
         switch (parallelTasksInProject) {
             case ParallelTasksInProject.TRUE: {
-                args += ['-Pkotlin.parallel.tasks.in.project=true']
+                args += ["-P$PARALLEL_TASKS_IN_PROJECT_PROPERTY=true"]
                 break
             }
             case ParallelTasksInProject.FALSE: {
-                args += ['-Pkotlin.parallel.tasks.in.project=false']
+                args += ["-P$PARALLEL_TASKS_IN_PROJECT_PROPERTY=false"]
                 break
             }
         }
@@ -42,7 +44,7 @@ abstract class AbstractKotlinPluginSmokeTest extends AbstractPluginValidatingSmo
             .forwardOutput()
     }
 
-    protected SmokeTestGradleRunner runnerFor(AbstractSmokeTest smokeTest, ParallelTasksInProject parallelTasksInProject, VersionNumber kotlinVersion, String... tasks) {
+    protected static SmokeTestGradleRunner runnerFor(AbstractSmokeTest smokeTest, ParallelTasksInProject parallelTasksInProject, VersionNumber kotlinVersion, String... tasks) {
         if (kotlinVersion.getMinor() < 5 && JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_16)) {
             String kotlinOpts = "-Dkotlin.daemon.jvm.options=--add-exports=java.base/sun.nio.ch=ALL-UNNAMED,--add-opens=java.base/java.util=ALL-UNNAMED"
             return runnerFor(smokeTest, parallelTasksInProject, tasks + [kotlinOpts] as String[])
@@ -51,12 +53,16 @@ abstract class AbstractKotlinPluginSmokeTest extends AbstractPluginValidatingSmo
     }
 
     /**
-     * Controls if and how to set the {@code kotlin.parallel.tasks.in.project} property.
+     * Controls if and how to set the {@code #PARALLEL_TASKS_IN_PROJECT_PROPERTY} property.
      */
     protected static enum ParallelTasksInProject {
         TRUE,
         FALSE,
-        OMIT
+        OMIT;
+
+        boolean isPropertyPresent() {
+            return this != OMIT
+        }
     }
 
     protected static class KotlinDeprecations extends BaseDeprecations implements WithKotlinDeprecations {

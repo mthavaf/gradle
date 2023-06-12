@@ -19,7 +19,6 @@ package org.gradle.smoketests
 import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.util.internal.VersionNumber
 import spock.lang.Issue
-import org.gradle.smoketests.AbstractKotlinPluginSmokeTest.KotlinDeprecations
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
@@ -68,18 +67,18 @@ class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
                 jvm()
             }
         """
-        def kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
+        def versionNumber = VersionNumber.parse(kotlinVersion)
 
         when:
-        def result = runner(ParallelTasksInProject.OMIT, kotlinVersionNumber, ':tasks')
+        def result = runner(ParallelTasksInProject.OMIT, versionNumber, ':tasks')
                 .deprecations(KotlinDeprecations) {
-                    expectOrgGradleUtilWrapUtilDeprecation(kotlinVersion)
-                    expectTestReportReportOnDeprecation(kotlinVersion)
-                    expectTestReportDestinationDirOnDeprecation(kotlinVersion)
-                    expectProjectConventionDeprecation(kotlinVersion)
-                    expectConventionTypeDeprecation(kotlinVersion)
-                    expectJavaPluginConventionDeprecation(kotlinVersion)
-                    expectBuildIdentifierNameDeprecation(kotlinVersion)
+                    expectOrgGradleUtilWrapUtilDeprecation(versionNumber)
+                    expectTestReportReportOnDeprecation(versionNumber)
+                    expectTestReportDestinationDirOnDeprecation(versionNumber)
+                    expectProjectConventionDeprecation(versionNumber)
+                    expectConventionTypeDeprecation(versionNumber)
+                    expectJavaPluginConventionDeprecation(versionNumber)
+                    expectBuildIdentifierNameDeprecation(versionNumber)
                 }
                 .build()
 
@@ -139,14 +138,14 @@ class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
         }
 
         testRunner.deprecations(KotlinDeprecations) {
-            expectOrgGradleUtilWrapUtilDeprecation(kotlinVersion)
+            expectOrgGradleUtilWrapUtilDeprecation(versionNumber)
             2.times {
-                expectProjectConventionDeprecation(kotlinVersion)
-                expectConventionTypeDeprecation(kotlinVersion)
-                expectJavaPluginConventionDeprecation(kotlinVersion)
+                expectProjectConventionDeprecation(versionNumber)
+                expectConventionTypeDeprecation(versionNumber)
+                expectJavaPluginConventionDeprecation(versionNumber)
             }
-            expectConfigureUtilDeprecation(kotlinVersion)
-            expectBuildIdentifierNameDeprecation(kotlinVersion)
+            expectConfigureUtilDeprecation(versionNumber)
+            expectBuildIdentifierNameDeprecation(versionNumber)
         }
 
         def result = testRunner.build()

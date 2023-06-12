@@ -20,13 +20,14 @@ import com.gradle.enterprise.testing.annotations.LocalOnly
 import org.gradle.integtests.fixtures.android.AndroidHome
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
 import org.gradle.util.internal.VersionNumber
+import org.gradle.smoketests.AbstractKotlinPluginSmokeTest.ParallelTasksInProject
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 @LocalOnly
 class KotlinPluginAndroidGroovyDSLSmokeTest extends AbstractSmokeTest {
 
-    def "kotlin android on android-kotlin-example (kotlin=#kotlinPluginVersion, agp=#androidPluginVersion, workers=#workers)"(String kotlinPluginVersion, String androidPluginVersion, boolean workers) {
+    def "kotlin android on android-kotlin-example (kotlin=#kotlinPluginVersion, agp=#androidPluginVersion, workers=#parallelTasksInProject)"(String kotlinPluginVersion, String androidPluginVersion, boolean workers) {
         given:
         AndroidHome.assertIsSet()
         AGP_VERSIONS.assumeAgpSupportsCurrentJavaVersionAndKotlinVersion(androidPluginVersion, kotlinPluginVersion)
@@ -40,16 +41,18 @@ class KotlinPluginAndroidGroovyDSLSmokeTest extends AbstractSmokeTest {
                 androidPluginVersion: androidPluginVersion,
                 androidBuildToolsVersion: TestedVersions.androidTools)
         }
+        def kotlinPluginVersionNumber = VersionNumber.parse(kotlinPluginVersion)
+        def androidPluginVersionNumber = VersionNumber.parse(androidPluginVersion)
 
         when:
-        def runner = createRunner(workers, kotlinPluginVersion, androidPluginVersion, 'clean', ":app:testDebugUnitTestCoverage")
+        def runner = createRunner(parallelTasksInProject, kotlinPluginVersionNumber, androidPluginVersionNumber, 'clean', ":app:testDebugUnitTestCoverage")
         def result = useAgpVersion(androidPluginVersion, runner)
             .deprecations(KotlinAndroidDeprecations) {
-                expectKotlinConfigurationAsDependencyDeprecation(kotlinPluginVersion)
-                expectAndroidOrKotlinWorkerSubmitDeprecation(androidPluginVersion, workers, kotlinPluginVersion)
+                expectKotlinConfigurationAsDependencyDeprecation(kotlinPluginVersionNumber)
+                expectAndroidOrKotlinWorkerSubmitDeprecation(androidPluginVersionNumber, parallelTasksInProject, kotlinPluginVersionNumber)
                 expectReportDestinationPropertyDeprecation(androidPluginVersion)
-                expectKotlinCompileDestinationDirPropertyDeprecation(kotlinPluginVersion)
-                if (GradleContextualExecuter.configCache || VersionNumber.parse(kotlinPluginVersion) >= VersionNumber.parse("1.8.0")) {
+                expectKotlinCompileDestinationDirPropertyDeprecation(kotlinPluginVersionNumber)
+                if (GradleContextualExecuter.configCache || VersionNumber.parse(kotlinPluginVersionNumber) >= VersionNumber.parse("1.8.0")) {
                     expectBuildIdentifierIsCurrentBuildDeprecation(androidPluginVersion)
                 }
             }.build()
@@ -64,20 +67,20 @@ class KotlinPluginAndroidGroovyDSLSmokeTest extends AbstractSmokeTest {
 //        androidPluginVersion = TestedVersions.androidGradle.versions.last()
 //        workers = false
 
-        [kotlinPluginVersion, androidPluginVersion, workers] << [
+        [kotlinPluginVersion, androidPluginVersion, parallelTasksInProject] << [
             TestedVersions.kotlin.versions,
             TestedVersions.androidGradle.versions,
-            [true, false],
+            ParallelTasksInProject.values(),
         ].combinations()
     }
 
-    private SmokeTestGradleRunner createRunner(boolean workers, String kotlinVersion, String androidPluginVersion, String... tasks) {
-        return KotlinPluginSmokeTest.runnerFor(this, workers, VersionNumber.parse(kotlinVersion), tasks)
+    private SmokeTestGradleRunner createRunner(ParallelTasksInProject parallelTasksInProject, VersionNumber kotlinPluginVersionNumber, String androidPluginVersion, String... tasks) {
+        return KotlinPluginSmokeTest.runnerFor(this, parallelTasksInProject, kotlinPluginVersionNumber)
             .deprecations(KotlinPluginSmokeTest.KotlinDeprecations) {
-                expectOrgGradleUtilWrapUtilDeprecation(kotlinVersion)
-                expectBasePluginConventionDeprecation(kotlinVersion, androidPluginVersion)
-                expectProjectConventionDeprecation(kotlinVersion, androidPluginVersion)
-                expectConventionTypeDeprecation(kotlinVersion, androidPluginVersion)
+                expectOrgGradleUtilWrapUtilDeprecation(kotlinPluginVersionNumber)
+                expectBasePluginConventionDeprecation(kotlinPluginVersionNumber, androidPluginVersion)
+                expectProjectConventionDeprecation(kotlinPluginVersionNumber, VersionNumber.parse(androidPluginVersion))
+                expectConventionTypeDeprecation(kotlinPluginVersionNumber, androidPluginVersion)
             }
     }
 }

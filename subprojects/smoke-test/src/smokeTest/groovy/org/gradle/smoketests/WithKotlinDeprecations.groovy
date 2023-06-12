@@ -37,39 +37,35 @@ trait WithKotlinDeprecations extends WithReportDeprecations {
         "This is scheduled to be removed in Gradle 8.0. Please use the archiveFileName property instead. " +
         String.format(RECOMMENDATION, "information", DOCUMENTATION_REGISTRY.getDslRefForProperty("org.gradle.api.tasks.bundling.AbstractArchiveTask", "archiveName"))
 
-    boolean kotlinPluginUsesOldWorkerApi(VersionNumber kotlinPluginVersion) {
-        kotlinPluginVersion >= KOTLIN_VERSION_USING_NEW_WORKERS_API && kotlinPluginVersion <= KOTLIN_VERSION_WITH_OLD_WORKERS_API_REMOVED
+    boolean kotlinPluginUsesOldWorkerApi(VersionNumber versionNumber) {
+        versionNumber >= KOTLIN_VERSION_USING_NEW_WORKERS_API && versionNumber <= KOTLIN_VERSION_WITH_OLD_WORKERS_API_REMOVED
     }
 
-    void expectKotlinCompileDestinationDirPropertyDeprecation(String version) {
-        VersionNumber versionNumber = VersionNumber.parse(version)
+    void expectKotlinCompileDestinationDirPropertyDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             versionNumber >= VersionNumber.parse('1.5.20') && versionNumber <= VersionNumber.parse('1.6.21'),
             ABSTRACT_COMPILE_DESTINATION_DIR_DEPRECATION
         )
     }
 
-    void expectKotlinArchiveNameDeprecation(String kotlinPluginVersion) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinPluginVersion)
-        runner.expectLegacyDeprecationWarningIf(kotlinVersionNumber.minor == 3, ARCHIVE_NAME_DEPRECATION)
+    void expectKotlinArchiveNameDeprecation(VersionNumber versionNumber) {
+        runner.expectLegacyDeprecationWarningIf(versionNumber.minor == 3, ARCHIVE_NAME_DEPRECATION)
     }
 
-    void expectKotlin2JsPluginDeprecation(String version) {
-        VersionNumber versionNumber = VersionNumber.parse(version)
+    void expectKotlin2JsPluginDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(versionNumber >= VersionNumber.parse('1.4.0'),
             "The `kotlin2js` Gradle plugin has been deprecated."
         )
     }
 
-    void expectKotlinParallelTasksDeprecation(VersionNumber version, ParallelTasksInProject parallelTasksInProject) {
+    void expectKotlinParallelTasksDeprecation(VersionNumber versionNumber, ParallelTasksInProject parallelTasksInProject) {
         runner.expectLegacyDeprecationWarningIf(
-            parallelTasksInProject != ParallelTasksInProject.OMIT && kotlinPluginUsesOldWorkerApi(version),
+            parallelTasksInProject.isPropertyPresent() && kotlinPluginUsesOldWorkerApi(versionNumber),
             "Project property 'kotlin.parallel.tasks.in.project' is deprecated."
         )
     }
 
-    void expectAbstractCompileDestinationDirDeprecation(String version) {
-        VersionNumber versionNumber = VersionNumber.parse(version)
+    void expectAbstractCompileDestinationDirDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             versionNumber <= VersionNumber.parse("1.6.21"),
             "The AbstractCompile.destinationDir property has been deprecated. " +
@@ -79,8 +75,7 @@ trait WithKotlinDeprecations extends WithReportDeprecations {
         )
     }
 
-    void expectOrgGradleUtilWrapUtilDeprecation(String version) {
-        VersionNumber versionNumber = VersionNumber.parse(version)
+    void expectOrgGradleUtilWrapUtilDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             versionNumber < VersionNumber.parse("1.7.20"),
             "The org.gradle.util.WrapUtil type has been deprecated. " +
@@ -90,8 +85,7 @@ trait WithKotlinDeprecations extends WithReportDeprecations {
         )
     }
 
-    void expectTestReportReportOnDeprecation(String version) {
-        VersionNumber versionNumber = VersionNumber.parse(version)
+    void expectTestReportReportOnDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             versionNumber.baseVersion < VersionNumber.parse("1.8.20"),
             "The TestReport.reportOn(Object...) method has been deprecated. " +
@@ -101,8 +95,7 @@ trait WithKotlinDeprecations extends WithReportDeprecations {
         )
     }
 
-    void expectTestReportDestinationDirOnDeprecation(String version) {
-        VersionNumber versionNumber = VersionNumber.parse(version)
+    void expectTestReportDestinationDirOnDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             versionNumber.baseVersion < VersionNumber.parse("1.8.20"),
             "The TestReport.destinationDir property has been deprecated. " +
@@ -112,67 +105,56 @@ trait WithKotlinDeprecations extends WithReportDeprecations {
         )
     }
 
-    void expectProjectConventionDeprecation(String kotlinVersion) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
+    void expectProjectConventionDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(
-            kotlinVersionNumber < VersionNumber.parse("1.7.22"),
+            versionNumber < VersionNumber.parse("1.7.22"),
             PROJECT_CONVENTION_DEPRECATION
         )
     }
 
-    void expectBasePluginConventionDeprecation(String kotlinVersion) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
+    void expectBasePluginConventionDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(
-            kotlinVersionNumber < VersionNumber.parse("1.7.0"),
+            versionNumber < VersionNumber.parse("1.7.0"),
             BASE_PLUGIN_CONVENTION_DEPRECATION
         )
     }
 
-    void expectBasePluginConventionDeprecation(String kotlinVersion, String agpVersion) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-        VersionNumber agpVersionNumber = VersionNumber.parse(agpVersion)
+    void expectBasePluginConventionDeprecation(VersionNumber kotlinVersionNumber, VersionNumber agpVersionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             agpVersionNumber < VersionNumber.parse("7.4.0") || kotlinVersionNumber < VersionNumber.parse("1.7.0"),
             BASE_PLUGIN_CONVENTION_DEPRECATION
         )
     }
 
-    void expectJavaPluginConventionDeprecation(String kotlinVersion) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
+    void expectJavaPluginConventionDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(
-            kotlinVersionNumber < VersionNumber.parse("1.7.22"),
+            versionNumber < VersionNumber.parse("1.7.22"),
             JAVA_PLUGIN_CONVENTION_DEPRECATION
         )
     }
 
-    void expectProjectConventionDeprecation(String kotlinVersion, String agpVersion) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-        VersionNumber agpVersionNumber = VersionNumber.parse(agpVersion)
+    void expectProjectConventionDeprecation(VersionNumber kotlinVersionNumber, VersionNumber agpVersionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             agpVersionNumber < VersionNumber.parse("7.4.0") || (agpVersionNumber >= VersionNumber.parse("7.4.0") && kotlinVersionNumber < VersionNumber.parse("1.7.0")),
             PROJECT_CONVENTION_DEPRECATION
         )
     }
 
-    void expectConventionTypeDeprecation(String kotlinVersion) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
+    void expectConventionTypeDeprecation(VersionNumber kotlinVersionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             kotlinVersionNumber < VersionNumber.parse("1.7.22"),
             CONVENTION_TYPE_DEPRECATION
         )
     }
 
-    void expectConventionTypeDeprecation(String kotlinVersion, String agpVersion) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-        VersionNumber agpVersionNumber = VersionNumber.parse(agpVersion)
+    void expectConventionTypeDeprecation(VersionNumber kotlinVersionNumber, VersionNumber agpVersionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             agpVersionNumber < VersionNumber.parse("7.4.0") || (agpVersionNumber >= VersionNumber.parse("7.4.0") && kotlinVersionNumber < VersionNumber.parse("1.7.22")),
             CONVENTION_TYPE_DEPRECATION
         )
     }
 
-    void expectConfigureUtilDeprecation(String version) {
-        VersionNumber versionNumber = VersionNumber.parse(version)
+    void expectConfigureUtilDeprecation(VersionNumber versionNumber) {
         runner.expectLegacyDeprecationWarningIf(
             versionNumber < VersionNumber.parse("1.7.22"),
             "The org.gradle.util.ConfigureUtil type has been deprecated. " +
@@ -182,8 +164,7 @@ trait WithKotlinDeprecations extends WithReportDeprecations {
         )
     }
 
-    void expectBuildIdentifierNameDeprecation(String kotlinVersion) {
-        VersionNumber versionNumber = VersionNumber.parse(kotlinVersion)
+    void expectBuildIdentifierNameDeprecation(VersionNumber versionNumber) {
         runner.expectDeprecationWarningIf(versionNumber >= VersionNumber.parse("1.8.20"),
             "The BuildIdentifier.getName() method has been deprecated. " +
                 "This is scheduled to be removed in Gradle 9.0. " +
@@ -197,23 +178,23 @@ trait WithKotlinDeprecations extends WithReportDeprecations {
         expectVersionSpecificDeprecations(kotlinVersion, ParallelTasksInProject.OMIT)
     }
 
-    void expectVersionSpecificDeprecations(VersionNumber kotlinVersion, ParallelTasksInProject parallelTasksInProject) {
-        expectKotlinParallelTasksDeprecation(kotlinVersion, parallelTasksInProject)
-        if (kotlinVersion <= VersionNumber.parse("1.7.0")) {
-            expectOrgGradleUtilWrapUtilDeprecation(kotlinVersion.toString())
-            expectConventionTypeDeprecation(kotlinVersion.toString())
-            expectJavaPluginConventionDeprecation(kotlinVersion.toString())
-            expectAbstractCompileDestinationDirDeprecation(kotlinVersion.toString())
+    void expectVersionSpecificDeprecations(VersionNumber versionNumber, ParallelTasksInProject parallelTasksInProject) {
+        expectKotlinParallelTasksDeprecation(versionNumber, parallelTasksInProject)
+        if (versionNumber <= VersionNumber.parse("1.7.0")) {
+            expectOrgGradleUtilWrapUtilDeprecation(versionNumber)
+            expectConventionTypeDeprecation(versionNumber)
+            expectJavaPluginConventionDeprecation(versionNumber)
+            expectAbstractCompileDestinationDirDeprecation(versionNumber)
         }
-        if (kotlinVersion <= VersionNumber.parse("1.7.22")) {
-            expectProjectConventionDeprecation(kotlinVersion.toString())
+        if (versionNumber <= VersionNumber.parse("1.7.22")) {
+            expectProjectConventionDeprecation(versionNumber)
         }
-        if (kotlinVersion <= VersionNumber.parse("1.8.0")) {
-            expectTestReportReportOnDeprecation(kotlinVersion.toString())
-            expectTestReportDestinationDirOnDeprecation(kotlinVersion.toString())
+        if (versionNumber <= VersionNumber.parse("1.8.0")) {
+            expectTestReportReportOnDeprecation(versionNumber)
+            expectTestReportDestinationDirOnDeprecation(versionNumber)
         }
-        if (kotlinVersion > VersionNumber.parse("1.8.0")) {
-            expectBuildIdentifierNameDeprecation(kotlinVersion.toString())
+        if (versionNumber > VersionNumber.parse("1.8.0")) {
+            expectBuildIdentifierNameDeprecation(versionNumber)
         }
     }
 }

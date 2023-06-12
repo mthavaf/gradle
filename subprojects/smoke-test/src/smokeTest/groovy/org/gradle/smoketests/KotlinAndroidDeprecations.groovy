@@ -17,6 +17,7 @@
 package org.gradle.smoketests
 
 import org.gradle.api.internal.DocumentationRegistry
+import org.gradle.smoketests.AbstractKotlinPluginSmokeTest.ParallelTasksInProject
 import org.gradle.util.internal.VersionNumber
 
 import static org.gradle.api.internal.DocumentationRegistry.RECOMMENDATION
@@ -39,8 +40,7 @@ class KotlinAndroidDeprecations extends BaseDeprecations implements WithKotlinDe
         runner.expectLegacyDeprecationWarningIf(kotlinVersionNumber < KOTLIN_VERSION_WITHOUT_CONFIGURATION_DEPENDENCY, CONFIGURATION_AS_DEPENDENCY_DEPRECATION)
     }
 
-    void expectAndroidOrKotlinWorkerSubmitDeprecation(String agpVersion, boolean kotlinWorkers, String kotlinVersion) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
-        runner.expectLegacyDeprecationWarningIf(androidPluginUsesOldWorkerApi(agpVersion) || (kotlinWorkers && kotlinPluginUsesOldWorkerApi(kotlinVersionNumber)), WORKER_SUBMIT_DEPRECATION)
+    void expectAndroidOrKotlinWorkerSubmitDeprecation(VersionNumber androidPluginVersionNumber, ParallelTasksInProject parallelTasksInProject, VersionNumber kotlinPluginVersionNumber) {
+        runner.expectLegacyDeprecationWarningIf(androidPluginUsesOldWorkerApi(androidPluginVersionNumber.toString()) || (parallelTasksInProject.isPropertyPresent() && kotlinPluginUsesOldWorkerApi(kotlinPluginVersionNumber)), WORKER_SUBMIT_DEPRECATION)
     }
 }
