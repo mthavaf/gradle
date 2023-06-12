@@ -19,6 +19,7 @@ package org.gradle.smoketests
 import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.util.internal.VersionNumber
 import spock.lang.Issue
+import org.gradle.smoketests.AbstractKotlinPluginSmokeTest.KotlinDeprecations
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
@@ -33,7 +34,7 @@ class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
         replaceCssSupportBlocksInBuildFile(kotlinVersionNumber)
 
         when:
-        def result = runner(Workers.OMIT, kotlinVersionNumber, ':tasks')
+        def result = runner(ParallelTasksInProject.OMIT, kotlinVersionNumber, ':tasks')
             .deprecations(KotlinDeprecations) {
                 expectVersionSpecificDeprecations(kotlinVersionNumber)
             }
@@ -67,9 +68,10 @@ class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
                 jvm()
             }
         """
+        def kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
 
         when:
-        def result = runner(Workers.OMIT, VersionNumber.parse(kotlinVersion), ':tasks')
+        def result = runner(ParallelTasksInProject.OMIT, kotlinVersionNumber, ':tasks')
                 .deprecations(KotlinDeprecations) {
                     expectOrgGradleUtilWrapUtilDeprecation(kotlinVersion)
                     expectTestReportReportOnDeprecation(kotlinVersion)
@@ -128,7 +130,7 @@ class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
 
         when:
         def versionNumber = VersionNumber.parse(kotlinVersion)
-        def testRunner = runner(Workers.FALSE, versionNumber, ':resolve', '--stacktrace')
+        def testRunner = runner(ParallelTasksInProject.FALSE, versionNumber, ':resolve', '--stacktrace')
 
         if (versionNumber < VersionNumber.parse('1.7.22')) {
             testRunner.expectLegacyDeprecationWarning("The AbstractCompile.destinationDir property has been deprecated. This is scheduled to be removed in Gradle 9.0. " +

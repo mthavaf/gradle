@@ -40,6 +40,7 @@ class KotlinAndroidDeprecations extends BaseDeprecations implements WithKotlinDe
     }
 
     void expectAndroidOrKotlinWorkerSubmitDeprecation(String agpVersion, boolean kotlinWorkers, String kotlinVersion) {
-        runner.expectLegacyDeprecationWarningIf(androidPluginUsesOldWorkerApi(agpVersion) || (kotlinWorkers && kotlinPluginUsesOldWorkerApi(kotlinVersion)), WORKER_SUBMIT_DEPRECATION)
+        VersionNumber kotlinVersionNumber = VersionNumber.parse(kotlinVersion)
+        runner.expectLegacyDeprecationWarningIf(androidPluginUsesOldWorkerApi(agpVersion) || (kotlinWorkers && kotlinPluginUsesOldWorkerApi(kotlinVersionNumber)), WORKER_SUBMIT_DEPRECATION)
     }
 }
