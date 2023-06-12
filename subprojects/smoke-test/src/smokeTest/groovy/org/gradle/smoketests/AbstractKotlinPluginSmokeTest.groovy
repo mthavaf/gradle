@@ -48,10 +48,9 @@ abstract class AbstractKotlinPluginSmokeTest extends AbstractPluginValidatingSmo
             )
         }
 
-        void expectKotlinParallelTasksDeprecation(String version) {
-            VersionNumber versionNumber = VersionNumber.parse(version)
+        void expectKotlinParallelTasksDeprecation(String version, Workers workers) {
             runner.expectLegacyDeprecationWarningIf(
-                versionNumber >= VersionNumber.parse('1.5.20') && versionNumber <= VersionNumber.parse('1.6.10'),
+                workers != Workers.OMIT && kotlinPluginUsesOldWorkerApi(version),
                 "Project property 'kotlin.parallel.tasks.in.project' is deprecated."
             )
         }

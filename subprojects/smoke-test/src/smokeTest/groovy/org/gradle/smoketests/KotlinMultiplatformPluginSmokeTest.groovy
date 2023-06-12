@@ -128,7 +128,7 @@ class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
 
         when:
         def versionNumber = VersionNumber.parse(kotlinVersion)
-        def testRunner = runner(false, versionNumber, ':resolve', '--stacktrace')
+        def testRunner = runner(Workers.FALSE, versionNumber, ':resolve', '--stacktrace')
 
         if (versionNumber < VersionNumber.parse('1.7.22')) {
             testRunner.expectLegacyDeprecationWarning("The AbstractCompile.destinationDir property has been deprecated. This is scheduled to be removed in Gradle 9.0. " +
