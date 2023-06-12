@@ -36,9 +36,9 @@ class KotlinPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
         def versionNumber = VersionNumber.parse(version)
 
         when:
-        def result = runner(workers, parallelTasksInProject, 'run')
+        def result = runner(parallelTasksInProject, parallelTasksInProject, 'run')
             .deprecations(KotlinDeprecations) {
-                expectKotlinParallelTasksDeprecation(versionNumber, workers)
+                expectKotlinParallelTasksDeprecation(versionNumber, parallelTasksInProject)
                 expectKotlinArchiveNameDeprecation(versionNumber)
                 expectAbstractCompileDestinationDirDeprecation(versionNumber)
                 expectOrgGradleUtilWrapUtilDeprecation(versionNumber)
