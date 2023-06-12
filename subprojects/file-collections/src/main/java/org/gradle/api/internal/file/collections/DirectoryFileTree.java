@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class DirectoryFileTree implements MinimalFileTree, PatternFilterableFileTree, RandomAccessFileCollection, LocalFileTree, DirectoryTree {
     private static final Logger LOGGER = LoggerFactory.getLogger(DirectoryFileTree.class);
-    private static final DirectoryWalker DEFAULT_DIRECTORY_WALKER = new LinkAwareDirectoryWalker(FileSystems.getDefault());
+    private static final DirectoryWalker DEFAULT_DIRECTORY_WALKER = new DefaultDirectoryWalker(FileSystems.getDefault());
     private static final DirectoryWalker REPRODUCIBLE_DIRECTORY_WALKER = new ReproducibleDirectoryWalker(FileSystems.getDefault());
 
     private final File dir;

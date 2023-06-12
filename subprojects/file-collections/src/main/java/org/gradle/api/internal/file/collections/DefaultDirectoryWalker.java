@@ -41,7 +41,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.EnumSet;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultDirectoryWalker implements DirectoryWalker {
@@ -61,14 +60,7 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
 
         try {
             PathVisitor pathVisitor = new PathVisitor(directoryDetailsHolder, spec, postfix, visitor, stopFlag, rootPath, fileSystem);
-            Set<FileVisitOption> visitOptions;
-            LinksStrategy linksStrategy = visitor.getLinksStrategy();
-            if (linksStrategy == null || !linksStrategy.preserveAny()) {
-                visitOptions = EnumSet.of(FileVisitOption.FOLLOW_LINKS);
-            } else {
-                visitOptions = EnumSet.noneOf(FileVisitOption.class);
-            }
-            Files.walkFileTree(rootDir.toPath(), visitOptions, Integer.MAX_VALUE, pathVisitor);
+            Files.walkFileTree(rootDir.toPath(), EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, pathVisitor);
         } catch (IOException e) {
             throw new GradleException(String.format("Could not list contents of directory '%s'.", rootDir), e);
         }
@@ -82,6 +74,7 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
         private final AtomicBoolean stopFlag;
         private final RelativePath rootPath;
         private final FileSystem fileSystem;
+        private final LinksStrategy linksStrategy;
 
         public PathVisitor(Deque<FileVisitDetails> directoryDetailsHolder, Spec<? super FileTreeElement> spec, boolean postfix, FileVisitor visitor, AtomicBoolean stopFlag, RelativePath rootPath, FileSystem fileSystem) {
             this.directoryDetailsHolder = directoryDetailsHolder;
@@ -91,12 +84,17 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
             this.stopFlag = stopFlag;
             this.rootPath = rootPath;
             this.fileSystem = fileSystem;
+            this.linksStrategy = visitor.getLinksStrategy() == null ? LinksStrategy.NONE : visitor.getLinksStrategy();
         }
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
             FileVisitDetails details = getFileVisitDetails(dir, attrs, true);
             if (directoryDetailsHolder.size() == 0 || shouldVisit(details, spec)) {
+                if (details.isSymbolicLink() && linksStrategy.shouldBePreserved(dir)) {
+                    visitor.visitFile(details);
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
                 directoryDetailsHolder.push(details);
                 if (directoryDetailsHolder.size() > 1 && !postfix) {
                     visitor.visitDir(details);
@@ -116,7 +114,6 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             FileVisitDetails details = getFileVisitDetails(file, attrs, false);
-            System.out.println("Visiting " + file);
             if (shouldVisit(details, spec)) {
                 visitor.visitFile(details);
             }
