@@ -15,6 +15,7 @@
  */
 package org.gradle.api.internal.file
 
+import org.gradle.api.GradleException
 import org.gradle.api.file.FilePermissions
 import org.gradle.api.file.RelativePath
 import org.gradle.internal.file.Chmod
@@ -22,6 +23,8 @@ import org.gradle.internal.nativeintegration.filesystem.FileSystem
 import org.gradle.test.fixtures.AbstractProjectBuilderSpec
 import org.gradle.test.fixtures.file.TestFile
 import org.gradle.util.internal.GFileUtils
+
+import java.nio.file.Files
 
 class AbstractFileTreeElementTest extends AbstractProjectBuilderSpec {
     final chmod = Mock(Chmod)
@@ -107,6 +110,20 @@ class AbstractFileTreeElementTest extends AbstractProjectBuilderSpec {
 
         boolean isDirectory() {
             return file.isDirectory()
+        }
+
+        @Override
+        boolean isSymbolicLink() {
+            return Files.isSymbolicLink(file.toPath());
+        }
+
+        @Override
+        String getSymbolicLinkTarget() {
+            try {
+                return Files.readSymbolicLink(file.toPath()).toString();
+            } catch (IOException e) {
+                throw new GradleException(String.format("Couldn't read symbolic link '%s'.", file.toPath()), e);
+            }
         }
 
         long getSize() {
