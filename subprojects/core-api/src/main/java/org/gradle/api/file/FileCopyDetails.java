@@ -154,4 +154,5 @@ public interface FileCopyDetails extends FileTreeElement, ContentFilterable {
      */
     RelativePath getRelativeSourcePath();
 
+    LinksStrategy getPreserveLinks();
 }

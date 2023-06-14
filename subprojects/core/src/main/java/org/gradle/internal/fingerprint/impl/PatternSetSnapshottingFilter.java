@@ -18,8 +18,9 @@ package org.gradle.internal.fingerprint.impl;
 
 import com.google.common.collect.Iterables;
 import org.gradle.api.Describable;
-import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.GradleException;
 import org.gradle.api.file.FilePermissions;
+import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.DefaultFilePermissions;
 import org.gradle.api.specs.Spec;
@@ -106,6 +107,11 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         }
 
         @Override
+        public String getSymbolicLinkTarget() {
+            return null; //FIXME
+        }
+
+        @Override
         public long getLastModified() {
             return getFile().lastModified();
         }
@@ -189,6 +195,16 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         public boolean isSymbolicLink() {
             return !isDirectory() && Files.isSymbolicLink(path);
         }
+
+        @Override
+        public String getSymbolicLinkTarget() {
+            try {
+                return Files.readSymbolicLink(path).toString();
+            } catch (IOException e) {
+                throw new GradleException(String.format("Couldn't read symbolic link '%s'.", path), e);
+            }
+        }
+
 
         @Override
         public long getLastModified() {

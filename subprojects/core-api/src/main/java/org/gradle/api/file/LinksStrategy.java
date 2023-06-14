@@ -88,6 +88,19 @@ public class LinksStrategy implements Serializable {
         return (isAbsolute && preserveAbsolute) || (!isAbsolute && preserveRelative);
     }
 
+    public boolean shouldBePreserved(FileTreeElement path) { //FIXME: should be more generic for arhives support
+        if (!path.isSymbolicLink()) {
+            return false;
+        }
+        String target = path.getSymbolicLinkTarget();
+        //FIXME: fails during unzip because link can be unpacked earlier than target
+//        if (!preserveBroken && !Files.exists(path)) {
+//            throw new GradleException(String.format("Couldn't follow symbolic link '%s'.", path));
+//        }
+        boolean isAbsolute = target.startsWith("/"); //FIXME
+        return (isAbsolute && preserveAbsolute) || (!isAbsolute && preserveRelative);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

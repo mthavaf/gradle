@@ -195,9 +195,14 @@ public class GeneratedSingletonFileTree implements FileSystemMirroringFileTree, 
             return false;
         }
 
-        @Override
+        @Override //FIXME
         public boolean isSymbolicLink() {
             return false;
+        }
+
+        @Override
+        public String getSymbolicLinkTarget() {
+            return null;
         }
 
         @Override

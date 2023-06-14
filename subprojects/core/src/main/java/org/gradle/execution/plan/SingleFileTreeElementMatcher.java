@@ -16,8 +16,9 @@
 
 package org.gradle.execution.plan;
 
-import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.GradleException;
 import org.gradle.api.file.FilePermissions;
+import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.DefaultFilePermissions;
 import org.gradle.api.specs.Spec;
@@ -83,6 +84,15 @@ public class SingleFileTreeElementMatcher {
         @Override
         public boolean isSymbolicLink() {
             return Files.isSymbolicLink(file.toPath());
+        }
+
+        @Override
+        public String getSymbolicLinkTarget() {
+            try {
+                return Files.readSymbolicLink(file.toPath()).toString();
+            } catch (IOException e) {
+                throw new GradleException(String.format("Couldn't read symbolic link '%s'.", file.toPath()), e);
+            }
         }
 
         @Override

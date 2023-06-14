@@ -20,11 +20,12 @@ import com.google.common.collect.ListMultimap;
 import groovy.lang.Closure;
 import org.gradle.api.Action;
 import org.gradle.api.Transformer;
+import org.gradle.api.file.ConfigurableFilePermissions;
 import org.gradle.api.file.ContentFilterable;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.ExpandDetails;
-import org.gradle.api.file.ConfigurableFilePermissions;
 import org.gradle.api.file.FilePermissions;
+import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
@@ -142,6 +143,11 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         }
 
         @Override
+        public String getSymbolicLinkTarget() {
+            return null; //TODO
+        }
+
+        @Override
         public long getLastModified() {
             return lastModified;
         }
@@ -223,6 +229,11 @@ public class NormalizingCopyActionDecorator implements CopyAction {
 
         @Override
         public RelativePath getRelativeSourcePath() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LinksStrategy getPreserveLinks() {
             throw new UnsupportedOperationException();
         }
 

@@ -47,7 +47,9 @@ public interface FileTreeElement {
      * @return true if this element is a symbolic link.
      */
     boolean isSymbolicLink(); //TODO: is it nessesary?
-    //String getSymbolicLinkTarget();
+
+    //FIXME: use relative path?
+    String getSymbolicLinkTarget();
 
     /**
      * Returns the last modified time of this file at the time of file traversal.

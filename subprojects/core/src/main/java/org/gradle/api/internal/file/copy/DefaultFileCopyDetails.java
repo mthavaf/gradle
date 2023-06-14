@@ -23,8 +23,8 @@ import org.gradle.api.file.ConfigurableFilePermissions;
 import org.gradle.api.file.ContentFilterable;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.ExpandDetails;
-import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FilePermissions;
+import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
@@ -99,6 +99,11 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
     @Override
     public boolean isSymbolicLink() {
         return fileDetails.isSymbolicLink();
+    }
+
+    @Override
+    public String getSymbolicLinkTarget() {
+        return fileDetails.getSymbolicLinkTarget();
     }
 
     @Override
@@ -294,6 +299,11 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
     @Override
     public RelativePath getRelativeSourcePath() {
         return this.fileDetails.getRelativePath();
+    }
+
+    @Override
+    public LinksStrategy getPreserveLinks() {
+        return preserveLinks;
     }
 
     private static class ByteCountingOutputStream extends OutputStream {
