@@ -48,6 +48,6 @@ public interface Problem {
 
     @Nullable
     Throwable getCause();
-
+    @Nullable
     String getProblemType();
 }

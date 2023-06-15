@@ -18,6 +18,7 @@ package org.gradle.api.problems;
 
 import org.gradle.api.Incubating;
 import org.gradle.api.problems.interfaces.DocLink;
+import org.gradle.api.problems.interfaces.PluginId;
 import org.gradle.api.problems.interfaces.Problem;
 import org.gradle.api.problems.interfaces.ProblemGroup;
 import org.gradle.api.problems.interfaces.ProblemLocation;
@@ -45,10 +46,15 @@ public class ProblemBuilder {
     private String path;
     private Integer line;
     private String description;
+    private String reason;
     private DocLink documentationUrl;
     private List<String> solution;
     private Throwable cause;
     private String problemType;
+    private String typeName;
+    private PluginId pluginId;
+    private String parentPropertyName;
+    private String propertyName;
 
     public ProblemBuilder(ProblemGroup problemGroup, String message, Severity severity) {
         this.problemGroup = problemGroup;
@@ -80,6 +86,14 @@ public class ProblemBuilder {
     public ProblemBuilder location(String path, Integer line) {
         this.path = path;
         this.line = line;
+        return this;
+    }
+
+    public ProblemBuilder location(@Nullable String typeName, @Nullable PluginId pluginId, @Nullable String parentPropertyName, @Nullable String propertyName) {
+        this.typeName = typeName;
+        this.pluginId = pluginId;
+        this.parentPropertyName = parentPropertyName;
+        this.propertyName = propertyName;
         return this;
     }
 
@@ -116,7 +130,7 @@ public class ProblemBuilder {
             problemGroup,
             message,
             severity,
-            path == null ? null : new DefaultProblemLocation(path, line),
+            new DefaultProblemLocation(path, line, typeName, pluginId, parentPropertyName, propertyName),
             documentationUrl,
             description,
             solution,
