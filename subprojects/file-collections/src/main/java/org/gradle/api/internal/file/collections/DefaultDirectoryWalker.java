@@ -89,7 +89,8 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-            FileVisitDetails details = getFileVisitDetails(dir, attrs, true);
+            boolean treatAsFile = Files.isSymbolicLink(dir) && linksStrategy.shouldBePreserved(dir); //FIXME: refactor properly
+            FileVisitDetails details = getFileVisitDetails(dir, attrs, !treatAsFile);
             if (directoryDetailsHolder.size() == 0 || shouldVisit(details, spec)) {
                 if (details.isSymbolicLink() && linksStrategy.shouldBePreserved(dir)) {
                     visitor.visitFile(details);

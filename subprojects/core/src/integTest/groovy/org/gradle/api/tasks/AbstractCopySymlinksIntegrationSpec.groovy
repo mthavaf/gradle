@@ -297,7 +297,6 @@ abstract class AbstractCopySymlinksIntegrationSpec extends AbstractIntegrationSp
 
     //TODO: test a case when root is a symlink
 
-    //TODO: decide on actual behavior
     def "symlinks should respect inclusions and similar transformations for #preserveLinks"() {
         given:
         def originalDir = inputDirectory.createDir("original")
@@ -306,7 +305,6 @@ abstract class AbstractCopySymlinksIntegrationSpec extends AbstractIntegrationSp
         def linkTxt = originalDir.file("link.txt").createLink(originalFile.getRelativePathFromBase())
         def linkDir = inputDirectory.file("linkDir").createLink(originalDir.getRelativePathFromBase())
 
-//TODO: nested directories
         buildKotlinFile << constructBuildScript("""
             preserveLinks = $preserveLinks
             from("${inputDirectory.name}"){
@@ -319,14 +317,14 @@ abstract class AbstractCopySymlinksIntegrationSpec extends AbstractIntegrationSp
         def outputDirectory = getResultDir()
 
         then:
-        def linkCopy = outputDirectory.file(originalDir).file(link.name)
+        def linkCopy = outputDirectory.file(originalDir.name, link.name)
         !linkCopy.exists()
 
-        def linkTxtCopy = outputDirectory.file(originalDir).file(linkTxt.name)
+        def linkTxtCopy = outputDirectory.file(originalDir.name, linkTxt.name)
         linkTxtCopy.exists()
 
-        def originalFileDirCopy = outputDirectory.file(linkDir).file(originalFile.name)
-        originalFileDirCopy.exists() == copied
+        def originalFileLinkDirCopy = outputDirectory.file(linkDir.name, originalFile.name)
+        originalFileLinkDirCopy.exists() == copied
 
         where:
         preserveLinks        | copied

@@ -69,12 +69,7 @@ public class CachingPatternSpecFactory extends PatternSpecFactory {
         @Override
         public boolean isSatisfiedBy(final FileTreeElement element) {
             try {
-                return resultCache.get(element.getRelativePath(), new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() {
-                        return spec.isSatisfiedBy(element);
-                    }
-                });
+                return resultCache.get(element.getRelativePath(), () -> spec.isSatisfiedBy(element));
             } catch (ExecutionException e) {
                 throw UncheckedException.throwAsUncheckedException(e.getCause());
             }

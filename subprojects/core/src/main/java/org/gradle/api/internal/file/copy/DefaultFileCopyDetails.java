@@ -302,7 +302,7 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
     }
 
     @Override
-    public LinksStrategy getPreserveLinks() {
+    public LinksStrategy getPreserveLinks() { //TODO: save the result of preserving strategy check
         return preserveLinks;
     }
 

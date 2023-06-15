@@ -30,6 +30,6 @@ public class RelativePathSpec implements Spec<FileTreeElement> {
     @Override
     public boolean isSatisfiedBy(FileTreeElement element) {
         RelativePath relativePath = element.getRelativePath();
-        return matcher.test(relativePath.getSegments(), relativePath.isFile()); //TODO: should respect links somehow
+        return matcher.test(relativePath.getSegments(), relativePath.isFile());
     }
 }

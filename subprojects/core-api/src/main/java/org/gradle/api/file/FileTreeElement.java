@@ -38,6 +38,7 @@ public interface FileTreeElement {
 
     /**
      * Returns true if this element is a directory, or false if this element is a regular file.
+     * Returns true if this element is a symbolic link to a directory.
      *
      * @return true if this element is a directory.
      */
