@@ -15,7 +15,9 @@
  */
 package org.gradle.api.internal.file;
 
+import org.apache.commons.io.IOUtils;
 import org.gradle.api.GradleException;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.RelativePath;
 import org.gradle.internal.file.Chmod;
@@ -26,6 +28,7 @@ import org.gradle.util.internal.GFileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 
 public class DefaultFileTreeElement extends AbstractFileTreeElement {
@@ -85,8 +88,12 @@ public class DefaultFileTreeElement extends AbstractFileTreeElement {
     }
 
     @Override
-    public InputStream open() {
-        return GFileUtils.openInputStream(file);
+    public void copyTo(OutputStream output) {
+        try (InputStream inputStream = GFileUtils.openInputStream(file)) {
+            IOUtils.copyLarge(inputStream, output);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

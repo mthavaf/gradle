@@ -17,10 +17,10 @@
 package org.gradle.api.internal.file.collections;
 
 import org.gradle.api.GradleException;
-import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.LinksStrategy;
+import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AttributeBasedFileVisitDetails;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
@@ -50,12 +50,12 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
         this.fileSystem = fileSystem;
     }
 
-    static boolean shouldVisit(FileTreeElement element, Spec<? super FileTreeElement> spec) {
+    static boolean shouldVisit(ReadOnlyFileTreeElement element, Spec<? super ReadOnlyFileTreeElement> spec) {
         return spec.isSatisfiedBy(element);
     }
 
     @Override
-    public void walkDir(File rootDir, RelativePath rootPath, FileVisitor visitor, Spec<? super FileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
+    public void walkDir(File rootDir, RelativePath rootPath, FileVisitor visitor, Spec<? super ReadOnlyFileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
         Deque<FileVisitDetails> directoryDetailsHolder = new ArrayDeque<>();
 
         try {
@@ -68,7 +68,7 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
 
     private static class PathVisitor implements java.nio.file.FileVisitor<Path> {
         private final Deque<FileVisitDetails> directoryDetailsHolder;
-        private final Spec<? super FileTreeElement> spec;
+        private final Spec<? super ReadOnlyFileTreeElement> spec;
         private final boolean postfix;
         private final FileVisitor visitor;
         private final AtomicBoolean stopFlag;
@@ -76,7 +76,7 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
         private final FileSystem fileSystem;
         private final LinksStrategy linksStrategy;
 
-        public PathVisitor(Deque<FileVisitDetails> directoryDetailsHolder, Spec<? super FileTreeElement> spec, boolean postfix, FileVisitor visitor, AtomicBoolean stopFlag, RelativePath rootPath, FileSystem fileSystem) {
+        public PathVisitor(Deque<FileVisitDetails> directoryDetailsHolder, Spec<? super ReadOnlyFileTreeElement> spec, boolean postfix, FileVisitor visitor, AtomicBoolean stopFlag, RelativePath rootPath, FileSystem fileSystem) {
             this.directoryDetailsHolder = directoryDetailsHolder;
             this.spec = spec;
             this.postfix = postfix;
@@ -89,10 +89,10 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-            boolean treatAsFile = Files.isSymbolicLink(dir) && linksStrategy.shouldBePreserved(dir); //FIXME: refactor properly
-            FileVisitDetails details = getFileVisitDetails(dir, attrs, !treatAsFile);
+            boolean preserveLink = linksStrategy.shouldBePreserved(dir);
+            FileVisitDetails details = getFileVisitDetails(dir, attrs, true, preserveLink);
             if (directoryDetailsHolder.size() == 0 || shouldVisit(details, spec)) {
-                if (details.isSymbolicLink() && linksStrategy.shouldBePreserved(dir)) {
+                if (details.isSymbolicLink()) {
                     visitor.visitFile(details);
                     return FileVisitResult.SKIP_SUBTREE;
                 }
@@ -114,29 +114,30 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-            FileVisitDetails details = getFileVisitDetails(file, attrs, false);
+            boolean preserveLink = linksStrategy.shouldBePreserved(file);
+            FileVisitDetails details = getFileVisitDetails(file, attrs, false, preserveLink);
             if (shouldVisit(details, spec)) {
                 visitor.visitFile(details);
             }
             return checkStopFlag();
         }
 
-        private FileVisitDetails getFileVisitDetails(Path file, @Nullable BasicFileAttributes attrs, boolean isDirectory) {
+        private FileVisitDetails getFileVisitDetails(Path file, @Nullable BasicFileAttributes attrs, boolean isDirectory, boolean preserveLink) {
             File child = file.toFile();
             FileVisitDetails dirDetails = directoryDetailsHolder.peek();
-            RelativePath childPath = dirDetails != null ? dirDetails.getRelativePath().append(!isDirectory, child.getName()) : rootPath;
+            RelativePath childPath = dirDetails != null ? dirDetails.getRelativePath().append(!isDirectory || preserveLink, child.getName()) : rootPath;
             if (attrs == null) {
                 return new UnauthorizedFileVisitDetails(child, childPath);
             } else if (isDirectory && OperatingSystem.current() == OperatingSystem.WINDOWS) {
                 // Workaround for https://github.com/gradle/gradle/issues/11577
-                return new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, fileSystem);
+                return new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, fileSystem, preserveLink);
             } else {
-                return new AttributeBasedFileVisitDetails(child, childPath, stopFlag, fileSystem, fileSystem, attrs);
+                return new AttributeBasedFileVisitDetails(child, childPath, stopFlag, fileSystem, fileSystem, attrs, preserveLink);
             }
         }
 
         private FileVisitDetails getUnauthorizedFileVisitDetails(Path file) {
-            return getFileVisitDetails(file, null, false);
+            return getFileVisitDetails(file, null, false, false);
         }
 
         @Override

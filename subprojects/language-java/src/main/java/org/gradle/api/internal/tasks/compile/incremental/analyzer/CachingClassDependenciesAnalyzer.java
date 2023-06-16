@@ -16,7 +16,7 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.analyzer;
 
-import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.internal.tasks.compile.incremental.deps.ClassAnalysis;
 import org.gradle.cache.Cache;
 import org.gradle.internal.hash.HashCode;
@@ -31,7 +31,7 @@ public class CachingClassDependenciesAnalyzer implements ClassDependenciesAnalyz
     }
 
     @Override
-    public ClassAnalysis getClassAnalysis(final HashCode classFileHash, final FileTreeElement classFile) {
+    public ClassAnalysis getClassAnalysis(final HashCode classFileHash, final FileVisitDetails classFile) {
         return cache.get(classFileHash, () -> analyzer.getClassAnalysis(classFileHash, classFile));
     }
 }

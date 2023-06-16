@@ -17,6 +17,9 @@
 package org.gradle.api.internal.file.archive;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.GradleException;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
@@ -24,6 +27,12 @@ import org.gradle.internal.file.Chmod;
 import org.gradle.util.internal.GFileUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -73,11 +82,56 @@ public abstract class AbstractArchiveFileTreeElement extends AbstractFileTreeEle
                 if (isSymbolicLink()) {
                     copySymlinkTo(file);
                 } else {
-                    copyTo(file);
+                    copyFileTo(file);
                 }
             }
         }
         return file;
+    }
+
+    /**
+     * Opens this file as an input stream. Generally, calling this method is more performant than calling {@code new
+     * FileInputStream(getFile())}.
+     *
+     * @return The input stream. Never returns null. The caller is responsible for closing this stream.
+     */
+    @SuppressWarnings("deprecation") // TODO: remove deprecation suppression after FileTreeElement.open() is removed
+    abstract public InputStream open();
+
+    @Override
+    public void copyTo(OutputStream output) {
+        try {
+            try (InputStream inputStream = open()) {
+                IOUtils.copyLarge(inputStream, output);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    protected void copyFileTo(File target) { //FIXME: permissions?
+        try {
+            if (isDirectory()) {
+                GFileUtils.mkdirs(target);
+            } else {
+                GFileUtils.mkdirs(target.getParentFile());
+                try (FileOutputStream outputStream = new FileOutputStream(target)) {
+                    copyTo(outputStream);
+                }
+            }
+        } catch (Exception e) {
+            throw new GradleException(String.format("Could not extract %s to '%s'.", getDisplayName(), target), e);
+        }
+    }
+
+    protected void copySymlinkTo(File target) { //FIXME: permissions?
+        Path targetPath = new File(getSymbolicLinkTarget().replace("/", File.separator)).toPath();
+        try {
+            Files.createSymbolicLink(target.toPath(), targetPath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

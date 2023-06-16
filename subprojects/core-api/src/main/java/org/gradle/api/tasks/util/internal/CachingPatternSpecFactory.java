@@ -21,21 +21,20 @@ import com.google.common.base.Objects;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.specs.Spec;
 import org.gradle.cache.internal.HeapProportionalCacheSizer;
 import org.gradle.internal.UncheckedException;
 
 import java.util.Collection;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 public class CachingPatternSpecFactory extends PatternSpecFactory {
     private static final int RESULTS_CACHE_MAX_SIZE = 100000;
     private static final int INSTANCES_MAX_SIZE = 30000;
     private final HeapProportionalCacheSizer cacheSizer;
-    private final Cache<SpecKey, Spec<FileTreeElement>> specInstanceCache;
+    private final Cache<SpecKey, Spec<ReadOnlyFileTreeElement>> specInstanceCache;
 
     public CachingPatternSpecFactory() {
         cacheSizer = new HeapProportionalCacheSizer();
@@ -43,31 +42,28 @@ public class CachingPatternSpecFactory extends PatternSpecFactory {
     }
 
     @Override
-    protected Spec<FileTreeElement> createSpec(final Collection<String> patterns, final boolean include, final boolean caseSensitive) {
+    protected Spec<ReadOnlyFileTreeElement> createSpec(final Collection<String> patterns, final boolean include, final boolean caseSensitive) {
         final SpecKey key = new SpecKey(ImmutableList.copyOf(patterns), include, caseSensitive);
         try {
-            return specInstanceCache.get(key, new Callable<Spec<FileTreeElement>>() {
-                @Override
-                public Spec<FileTreeElement> call() throws Exception {
-                    Spec<FileTreeElement> spec = CachingPatternSpecFactory.super.createSpec(patterns, include, caseSensitive);
-                    return new CachingSpec(spec);
-                }
+            return specInstanceCache.get(key, () -> {
+                Spec<ReadOnlyFileTreeElement> spec = CachingPatternSpecFactory.super.createSpec(patterns, include, caseSensitive);
+                return new CachingSpec(spec);
             });
         } catch (ExecutionException e) {
             throw UncheckedException.throwAsUncheckedException(e.getCause());
         }
     }
 
-    private class CachingSpec implements Spec<FileTreeElement> {
-        private final Spec<FileTreeElement> spec;
+    private class CachingSpec implements Spec<ReadOnlyFileTreeElement> {
+        private final Spec<ReadOnlyFileTreeElement> spec;
         private final Cache<RelativePath, Boolean> resultCache = CacheBuilder.newBuilder().maximumSize(cacheSizer.scaleCacheSize(RESULTS_CACHE_MAX_SIZE)).build();
 
-        CachingSpec(Spec<FileTreeElement> spec) {
+        CachingSpec(Spec<ReadOnlyFileTreeElement> spec) {
             this.spec = spec;
         }
 
         @Override
-        public boolean isSatisfiedBy(final FileTreeElement element) {
+        public boolean isSatisfiedBy(final ReadOnlyFileTreeElement element) {
             try {
                 return resultCache.get(element.getRelativePath(), () -> spec.isSatisfiedBy(element));
             } catch (ExecutionException e) {

@@ -30,8 +30,9 @@ import org.gradle.internal.hash.StreamHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStream;
 
 import static org.gradle.internal.FileUtils.hasExtension;
 
@@ -133,11 +134,13 @@ public class DefaultClassSetAnalyzer implements ClassSetAnalyzer {
 
         @Override
         protected HashCode getHashCode(FileVisitDetails fileDetails) {
-            InputStream inputStream = fileDetails.open();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(); //FIXME
+            fileDetails.copyTo(baos);
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
             try {
-                return hasher.hash(inputStream);
+                return hasher.hash(bais);
             } finally {
-                IoActions.closeQuietly(inputStream);
+                IoActions.closeQuietly(bais);
             }
         }
     }

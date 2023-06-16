@@ -27,8 +27,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AttributeBasedFileVisitDetails extends DefaultFileVisitDetails {
     private final BasicFileAttributes attributes;
 
-    public AttributeBasedFileVisitDetails(File file, RelativePath relativePath, AtomicBoolean stop, Chmod chmod, Stat stat, BasicFileAttributes attributes) {
-        super(file, relativePath, stop, chmod, stat);
+    public AttributeBasedFileVisitDetails(
+        File file,
+        RelativePath relativePath,
+        AtomicBoolean stop,
+        Chmod chmod,
+        Stat stat,
+        BasicFileAttributes attributes,
+        boolean preserveLink
+    ) {
+        super(file, relativePath, stop, chmod, stat, preserveLink);
         this.attributes = attributes;
     }
 

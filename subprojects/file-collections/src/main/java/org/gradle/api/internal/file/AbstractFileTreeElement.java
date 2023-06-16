@@ -15,11 +15,8 @@
  */
 package org.gradle.api.internal.file;
 
-import org.apache.commons.io.IOUtils;
 import org.gradle.api.GradleException;
-import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FileTreeElement;
-import org.gradle.api.file.FilePermissions;
 import org.gradle.internal.exceptions.Contextual;
 import org.gradle.internal.file.Chmod;
 import org.gradle.util.internal.GFileUtils;
@@ -27,53 +24,19 @@ import org.gradle.util.internal.GFileUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
-public abstract class AbstractFileTreeElement implements FileTreeElement {
+public abstract class AbstractFileTreeElement extends AbstractReadOnlyFileTreeElement implements FileTreeElement {
     private final Chmod chmod;
-
-    public abstract String getDisplayName();
 
     protected AbstractFileTreeElement(Chmod chmod) {
         this.chmod = chmod;
     }
 
-    protected Chmod getChmod() {
-        return chmod;
-    }
-
     @Override
-    public String toString() {
-        return getDisplayName();
-    }
-
-    @Override
-    public String getName() {
-        return getRelativePath().getLastName();
-    }
-
-    @Override
-    public String getPath() {
-        return getRelativePath().getPathString();
-    }
-
-    @Override
-    public void copyTo(OutputStream output) {
-        try {
-            InputStream inputStream = open();
-            try {
-                IOUtils.copyLarge(inputStream, output);
-            } finally {
-                inputStream.close();
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    @Override
+    @Deprecated
+    // TODO: remove after FileTreeElement.copyTo(File) is removed
     public boolean copyTo(File target) {
+        logDeprecation();
         validateTimeStamps();
         try {
             if (isDirectory()) {
@@ -89,37 +52,34 @@ public abstract class AbstractFileTreeElement implements FileTreeElement {
         }
     }
 
-    private void validateTimeStamps() {
+    @Deprecated
+    private void copyFile(File target) throws IOException {
+        try (FileOutputStream outputStream = new FileOutputStream(target)) {
+            copyTo(outputStream);
+        }
+    }
+
+    protected void validateTimeStamps() {
         final long lastModified = getLastModified();
-        if(lastModified < 0) {
+        if (lastModified < 0) {
             throw new GradleException(String.format("Invalid Timestamp %s for '%s'.", lastModified, getDisplayName()));
         }
     }
 
-    private void copyFile(File target) throws IOException {
-        FileOutputStream outputStream = new FileOutputStream(target);
-        try {
-            copyTo(outputStream);
-        } finally {
-            outputStream.close();
-        }
-    }
-
-    @Override
-    public int getMode() {
-        return getImmutablePermissions().toUnixNumeric();
-    }
-
-    @Override
-    public FilePermissions getImmutablePermissions() {
-        return isDirectory() ? DefaultFilePermissions.DEFAULT_DIR_PERMISSIONS :
-            DefaultFilePermissions.DEFAULT_FILE_PERMISSIONS;
-    }
-
     @Contextual
+    @Deprecated
     private static class CopyFileElementException extends GradleException {
         CopyFileElementException(String message, Throwable cause) {
             super(message, cause);
         }
+    }
+
+    public static void logDeprecation() {
+        throw new UnsupportedOperationException("Should not be called");
+        //TODO: uncomment after all tests are passed
+//        DeprecationLogger.deprecateMethod(FileTreeElement.class, "copyTo(File)")
+//            .willBeRemovedInGradle9()
+//            .withUpgradeGuideSection(8, "filetree_deprecations") //FIXME
+//            .nagUser();
     }
 }

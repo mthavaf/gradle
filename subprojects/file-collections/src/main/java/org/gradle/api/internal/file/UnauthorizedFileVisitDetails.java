@@ -21,7 +21,6 @@ import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.RelativePath;
 
 import java.io.File;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 public class UnauthorizedFileVisitDetails implements FileVisitDetails {
@@ -40,6 +39,11 @@ public class UnauthorizedFileVisitDetails implements FileVisitDetails {
     @Override
     public File getFile() {
         return file;
+    }
+
+    @Override
+    public void copyTo(OutputStream output) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -66,22 +70,6 @@ public class UnauthorizedFileVisitDetails implements FileVisitDetails {
     public long getSize() {
         throw new UnsupportedOperationException();
     }
-
-    @Override
-    public InputStream open() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void copyTo(OutputStream output) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean copyTo(File target) {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public String getName() {
         return file.getName();

@@ -27,7 +27,7 @@ import org.gradle.api.file.ExpandDetails;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.RelativePath;
-import org.gradle.api.internal.file.AbstractFileTreeElement;
+import org.gradle.api.internal.file.AbstractReadOnlyFileTreeElement;
 import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.internal.file.Chmod;
@@ -35,7 +35,7 @@ import org.gradle.internal.file.Chmod;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FilterReader;
-import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -99,20 +99,19 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         FileCopyDetailsInternal dir;
         if (detailsForPath.isEmpty()) {
             // TODO - this is pretty nasty, look at avoiding using a time bomb stub here
-            dir = new StubbedFileCopyDetails(path, includeEmptyDirs, chmod);
+            dir = new StubbedFileCopyDetails(path, includeEmptyDirs);
         } else {
             dir = detailsForPath.get(0);
         }
         delegateAction.processFile(dir);
     }
 
-    private static class StubbedFileCopyDetails extends AbstractFileTreeElement implements FileCopyDetailsInternal {
+    private static class StubbedFileCopyDetails extends AbstractReadOnlyFileTreeElement implements FileCopyDetailsInternal {
         private final RelativePath path;
         private final boolean includeEmptyDirs;
-        private long lastModified = System.currentTimeMillis();
+        private final long lastModified = System.currentTimeMillis();
 
-        private StubbedFileCopyDetails(RelativePath path, boolean includeEmptyDirs, Chmod chmod) {
-            super(chmod);
+        private StubbedFileCopyDetails(RelativePath path, boolean includeEmptyDirs) {
             this.path = path;
             this.includeEmptyDirs = includeEmptyDirs;
         }
@@ -154,11 +153,6 @@ public class NormalizingCopyActionDecorator implements CopyAction {
 
         @Override
         public long getSize() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public InputStream open() {
             throw new UnsupportedOperationException();
         }
 
@@ -234,6 +228,17 @@ public class NormalizingCopyActionDecorator implements CopyAction {
 
         @Override
         public LinksStrategy getPreserveLinks() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void copyTo(OutputStream output) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public boolean copyTo(File target) {
             throw new UnsupportedOperationException();
         }
 

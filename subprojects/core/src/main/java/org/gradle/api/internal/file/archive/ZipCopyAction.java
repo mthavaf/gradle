@@ -113,7 +113,7 @@ public class ZipCopyAction implements CopyAction {
 
         @Override
         public void processFile(FileCopyDetailsInternal details) {
-            if (details.getPreserveLinks().shouldBePreserved(details)) {
+            if (details.isSymbolicLink()) {
                 visitSymlink(details);
             } else if (details.isDirectory()) {
                 visitDir(details);

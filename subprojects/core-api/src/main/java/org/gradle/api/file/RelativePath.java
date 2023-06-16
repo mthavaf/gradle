@@ -39,7 +39,7 @@ public class RelativePath implements Serializable, Comparable<RelativePath>, Cha
     /**
      * Creates a {@code RelativePath}.
      *
-     * @param endsWithFile - if true, the path ends with a file, otherwise a directory
+     * @param endsWithFile - if true, the path ends with a file or a symbolic link which should be treated as file, otherwise a directory
      */
     public RelativePath(boolean endsWithFile, String... segments) {
         this(endsWithFile, null, segments);

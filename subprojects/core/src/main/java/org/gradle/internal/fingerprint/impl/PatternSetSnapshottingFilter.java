@@ -21,21 +21,18 @@ import org.gradle.api.Describable;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.DefaultFilePermissions;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.util.PatternSet;
-import org.gradle.internal.UncheckedException;
 import org.gradle.internal.file.FileType;
 import org.gradle.internal.file.Stat;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 import org.gradle.internal.snapshot.SnapshottingFilter;
-import org.gradle.util.internal.GFileUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -55,13 +52,13 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
 
     @Override
     public FileSystemSnapshotPredicate getAsSnapshotPredicate() {
-        Spec<FileTreeElement> spec = patternSet.getAsSpec();
+        Spec<ReadOnlyFileTreeElement> spec = patternSet.getAsSpec();
         return (snapshot, relativePath) -> spec.isSatisfiedBy(new LogicalFileTreeElement(snapshot, relativePath, stat));
     }
 
     @Override
     public DirectoryWalkerPredicate getAsDirectoryWalkerPredicate() {
-        Spec<FileTreeElement> spec = patternSet.getAsSpec();
+        Spec<ReadOnlyFileTreeElement> spec = patternSet.getAsSpec();
         return (Path path, String name, boolean isDirectory, Iterable<String> relativePath) ->
             spec.isSatisfiedBy(new PathBackedFileTreeElement(path, name, isDirectory, relativePath, stat));
     }
@@ -70,7 +67,7 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
      * Adapts a {@link FileSystemLocationSnapshot} to the {@link FileTreeElement} interface, e.g. to allow
      * passing it to a {@link org.gradle.api.tasks.util.PatternSet} for filtering.
      */
-    private static class LogicalFileTreeElement implements FileTreeElement, Describable {
+    private static class LogicalFileTreeElement implements ReadOnlyFileTreeElement, Describable {
         private final Iterable<String> relativePathIterable;
         private final Stat stat;
         private final FileSystemLocationSnapshot snapshot;
@@ -88,8 +85,7 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
             return "file '" + getFile() + "'";
         }
 
-        @Override
-        public File getFile() {
+        private File getFile() {
             if (file == null) {
                 file = new File(snapshot.getAbsolutePath());
             }
@@ -120,22 +116,6 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         public long getSize() {
             return getFile().length();
         }
-
-        @Override
-        public InputStream open() {
-            return GFileUtils.openInputStream(getFile());
-        }
-
-        @Override
-        public void copyTo(OutputStream output) {
-            throw new UnsupportedOperationException("Copy to not supported for filters");
-        }
-
-        @Override
-        public boolean copyTo(File target) {
-            throw new UnsupportedOperationException("Copy to not supported for filters");
-        }
-
         @Override
         public String getName() {
             return getRelativePath().getLastName();
@@ -166,7 +146,7 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         }
     }
 
-    private static class PathBackedFileTreeElement implements FileTreeElement {
+    private static class PathBackedFileTreeElement implements ReadOnlyFileTreeElement {
         private final Path path;
         private final String name;
         private final boolean isDirectory;
@@ -181,8 +161,7 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
             this.stat = stat;
         }
 
-        @Override
-        public File getFile() {
+        private File getFile() {
             return path.toFile();
         }
 
@@ -205,7 +184,6 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
             }
         }
 
-
         @Override
         public long getLastModified() {
             return getFile().lastModified();
@@ -214,25 +192,6 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         @Override
         public long getSize() {
             return getFile().length();
-        }
-
-        @Override
-        public InputStream open() {
-            try {
-                return Files.newInputStream(path);
-            } catch (IOException e) {
-                throw UncheckedException.throwAsUncheckedException(e);
-            }
-        }
-
-        @Override
-        public void copyTo(OutputStream output) {
-            throw new UnsupportedOperationException("Copy to not supported for filters");
-        }
-
-        @Override
-        public boolean copyTo(File target) {
-            throw new UnsupportedOperationException("Copy to not supported for filters");
         }
 
         @Override

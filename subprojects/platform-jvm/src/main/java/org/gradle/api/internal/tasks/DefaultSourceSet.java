@@ -19,9 +19,11 @@ import groovy.lang.Closure;
 import org.apache.commons.lang.StringUtils;
 import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.internal.jvm.ClassDirectoryBinaryNamingScheme;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetOutput;
 import org.gradle.util.internal.GUtil;
@@ -65,11 +67,8 @@ public abstract class DefaultSourceSet implements SourceSet {
         String resourcesDisplayName = displayName + " resources";
         resources = objectFactory.sourceDirectorySet("resources", resourcesDisplayName);
 
-        // Explicitly capture only a FileCollection in the lambda below for compatibility with configuration-cache.
-        FileCollection javaSourceFiles = javaSource;
-        resources.getFilter().exclude(
-            spec(element -> javaSourceFiles.contains(element.getFile()))
-        );
+        Spec<ReadOnlyFileTreeElement> sourcesSpec = javaSource.getFilterSpec();
+        resources.getFilter().exclude(spec(sourcesSpec::isSatisfiedBy));
 
         String allSourceDisplayName = displayName + " source";
         allSource = objectFactory.sourceDirectorySet("allsource", allSourceDisplayName);

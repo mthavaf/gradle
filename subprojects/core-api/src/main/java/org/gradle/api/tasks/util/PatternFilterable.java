@@ -17,6 +17,7 @@ package org.gradle.api.tasks.util;
 
 import groovy.lang.Closure;
 import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.specs.Spec;
 
 import java.util.Set;
@@ -136,7 +137,7 @@ public interface PatternFilterable {
      * @return this
      * @see PatternFilterable Pattern Format
      */
-    PatternFilterable include(Spec<FileTreeElement> includeSpec);
+    PatternFilterable include(Spec<ReadOnlyFileTreeElement> includeSpec);
 
     /**
      * Adds an include spec. This method may be called multiple times to append new specs. The given closure is passed a
@@ -187,11 +188,11 @@ public interface PatternFilterable {
      * @return this
      * @see PatternFilterable Pattern Format
      */
-    PatternFilterable exclude(Spec<FileTreeElement> excludeSpec);
+    PatternFilterable exclude(Spec<ReadOnlyFileTreeElement> excludeSpec);
 
     /**
      * Adds an exclude spec. This method may be called multiple times to append new specs.The given closure is passed a
-     * {@link org.gradle.api.file.FileTreeElement} as its parameter. The closure should return true or false. Example:
+     * {@link ReadOnlyFileTreeElement} as its parameter. The closure should return true or false. Example:
      *
      * <pre class='autoTested'>
      * copySpec {

@@ -27,8 +27,8 @@ import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.ExpandDetails;
 import org.gradle.api.file.FileCopyDetails;
-import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.LinksStrategy;
+import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.SyncSpec;
 import org.gradle.api.provider.Property;
 import org.gradle.api.specs.Spec;
@@ -159,7 +159,7 @@ public class CopySpecWrapper implements SyncSpec {
     }
 
     @Override
-    public CopySpec include(Spec<FileTreeElement> includeSpec) {
+    public CopySpec include(Spec<ReadOnlyFileTreeElement> includeSpec) {
         delegate.include(includeSpec);
         return this;
     }
@@ -183,7 +183,7 @@ public class CopySpecWrapper implements SyncSpec {
     }
 
     @Override
-    public CopySpec exclude(Spec<FileTreeElement> excludeSpec) {
+    public CopySpec exclude(Spec<ReadOnlyFileTreeElement> excludeSpec) {
         delegate.exclude(excludeSpec);
         return this;
     }

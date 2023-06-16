@@ -26,18 +26,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultFileVisitDetails extends DefaultFileTreeElement implements FileVisitDetails {
     private final AtomicBoolean stop;
+    private final boolean preserveLink;
 
-    public DefaultFileVisitDetails(File file, RelativePath relativePath, AtomicBoolean stop, Chmod chmod, Stat stat) {
+    public DefaultFileVisitDetails(File file, RelativePath relativePath, AtomicBoolean stop, Chmod chmod, Stat stat, boolean preserveLink) {
         super(file, relativePath, chmod, stat);
         this.stop = stop;
-    }
-
-    public DefaultFileVisitDetails(File file, Chmod chmod, Stat stat) {
-        this(file, new RelativePath(!file.isDirectory(), file.getName()), new AtomicBoolean(), chmod, stat);
+        this.preserveLink = preserveLink;
     }
 
     @Override
     public void stopVisiting() {
         stop.set(true);
+    }
+
+    @Override
+    public boolean isSymbolicLink() {
+        return preserveLink && super.isSymbolicLink();
     }
 }

@@ -18,10 +18,10 @@ package org.gradle.api.internal.file.collections;
 
 import org.apache.commons.io.comparator.PathFileComparator;
 import org.gradle.api.GradleException;
-import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.LinksStrategy;
+import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
 import org.gradle.api.specs.Spec;
@@ -51,7 +51,7 @@ public class ReproducibleDirectoryWalker implements DirectoryWalker {
     }
 
     @Override
-    public void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<? super FileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
+    public void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<? super ReadOnlyFileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
         LinksStrategy linksStrategy = visitor.getLinksStrategy() == null ? LinksStrategy.NONE : visitor.getLinksStrategy();
         File[] children = getChildren(file);
         if (children == null) {
@@ -59,7 +59,7 @@ public class ReproducibleDirectoryWalker implements DirectoryWalker {
                 throw new GradleException(String.format("Could not list contents of directory '%s' as it is not readable.", file));
             }
             if (linksStrategy.shouldBePreserved(file.toPath())) {
-                FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, fileSystem);
+                FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, fileSystem, true);
                 if (DirectoryFileTree.isAllowed(details, spec)) {
                     visitor.visitFile(details);
                 }
@@ -73,9 +73,10 @@ public class ReproducibleDirectoryWalker implements DirectoryWalker {
             File child = children[i];
             boolean isFile = child.isFile();
             RelativePath childPath = path.append(isFile, child.getName());
-            FileVisitDetails details = new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, fileSystem);
+            boolean preserveLink = linksStrategy.shouldBePreserved(child.toPath());
+            FileVisitDetails details = new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, fileSystem, preserveLink);
             if (DirectoryFileTree.isAllowed(details, spec)) {
-                if (isFile || linksStrategy.shouldBePreserved(child.toPath())) {
+                if (isFile || preserveLink) {
                     visitor.visitFile(details);
                 } else {
                     dirs.add(details);

@@ -24,7 +24,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
-public class LinksStrategy implements Serializable {
+/**
+ * Strategy for handling symbolic links during file operations.
+ */
+public class LinksStrategy implements Serializable { //TODO: refactor as a lambda + static redefined helper methods
     /**
      * Do not preserve any symlinks. This is the default.
      */
@@ -88,11 +91,8 @@ public class LinksStrategy implements Serializable {
         return (isAbsolute && preserveAbsolute) || (!isAbsolute && preserveRelative);
     }
 
-    public boolean shouldBePreserved(FileTreeElement path) { //FIXME: should be more generic for arhives support
-        if (!path.isSymbolicLink()) {
-            return false;
-        }
-        String target = path.getSymbolicLinkTarget();
+    public boolean shouldBePreserved(String target) { //FIXME: should be more generic for arhives support
+        //String target = path.getSymbolicLinkTarget();
         //FIXME: fails during unzip because link can be unpacked earlier than target
 //        if (!preserveBroken && !Files.exists(path)) {
 //            throw new GradleException(String.format("Couldn't follow symbolic link '%s'.", path));

@@ -257,7 +257,7 @@ public interface CopySpec extends CopySourceSpec, CopyProcessingSpec, PatternFil
      * @see org.gradle.api.tasks.util.PatternFilterable Pattern Format
      */
     @Override
-    CopySpec include(Spec<FileTreeElement> includeSpec);
+    CopySpec include(Spec<ReadOnlyFileTreeElement> includeSpec);
 
     /**
      * {@inheritDoc}
@@ -289,7 +289,7 @@ public interface CopySpec extends CopySourceSpec, CopyProcessingSpec, PatternFil
      * @see org.gradle.api.tasks.util.PatternFilterable Pattern Format
      */
     @Override
-    CopySpec exclude(Spec<FileTreeElement> excludeSpec);
+    CopySpec exclude(Spec<ReadOnlyFileTreeElement> excludeSpec);
 
     /**
      * {@inheritDoc}

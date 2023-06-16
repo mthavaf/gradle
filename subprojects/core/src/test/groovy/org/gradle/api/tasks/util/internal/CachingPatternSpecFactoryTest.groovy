@@ -24,7 +24,7 @@ import org.gradle.api.tasks.util.PatternSet
 import spock.lang.Specification
 
 class CachingPatternSpecFactoryTest extends Specification {
-    def "check that Spec<FileTreeElement> instances added to include/exclude aren't cached"() {
+    def "check that Spec<ReadOnlyFileTreeElement> instances added to include/exclude aren't cached"() {
         given:
         def patternSet = new PatternSet(new CachingPatternSpecFactory())
         boolean desiredResult = true

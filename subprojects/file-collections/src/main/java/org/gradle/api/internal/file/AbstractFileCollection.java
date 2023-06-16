@@ -302,7 +302,7 @@ public abstract class AbstractFileCollection implements FileCollectionInternal {
             @Override
             public void visitFileTreeBackedByFile(File file, FileTreeInternal fileTree, FileSystemMirroringFileTree sourceTree) {
                 // Visit the contents of the tree to generate the tree
-                if (visitAll(sourceTree)) {
+                if (materializeTree(sourceTree)) {
                     fileTrees.add(sourceTree.getMirror());
                 }
             }
@@ -313,7 +313,7 @@ public abstract class AbstractFileCollection implements FileCollectionInternal {
     /**
      * Visits all the files of the given tree.
      */
-    protected static boolean visitAll(FileSystemMirroringFileTree tree) {
+    protected static boolean materializeTree(FileSystemMirroringFileTree tree) {
         final MutableBoolean hasContent = new MutableBoolean();
         tree.visit(new FileVisitor() {
             @Override

@@ -17,11 +17,13 @@ package org.gradle.api.internal.file.archive;
 
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.apache.commons.io.IOUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.FileVisitor;
+import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.internal.file.DefaultFilePermissions;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
@@ -30,12 +32,10 @@ import org.gradle.cache.internal.DecompressionCache;
 import org.gradle.internal.file.Chmod;
 import org.gradle.internal.hash.FileHasher;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
@@ -93,13 +93,16 @@ public class ZipFileTree extends AbstractArchiveFileTree {
 
             AtomicBoolean stopFlag = new AtomicBoolean();
             File expandedDir = getExpandedDir();
+            LinksStrategy linksStrategy = visitor.getLinksStrategy() == null ? LinksStrategy.NONE : visitor.getLinksStrategy();
             try (ZipFile zip = new ZipFile(zipFile)) {
                 // The iteration order of zip.getEntries() is based on the hash of the zip entry. This isn't much use
                 // to us. So, collect the entries in a map and iterate over them in alphabetical order.
                 Iterator<ZipArchiveEntry> sortedEntries = entriesSortedByName(zip);
                 while (!stopFlag.get() && sortedEntries.hasNext()) {
                     ZipArchiveEntry entry = sortedEntries.next();
-                    DetailsImpl details = new DetailsImpl(zipFile, expandedDir, entry, zip, stopFlag, chmod);
+
+                    boolean preserveLink = entry.isUnixSymlink() && linksStrategy.shouldBePreserved(IOUtils.toString(zip.getInputStream(entry), StandardCharsets.UTF_8)); //FIXME: refactor
+                    DetailsImpl details = new DetailsImpl(zipFile, expandedDir, entry, zip, stopFlag, chmod, preserveLink);
                     if (entry.isDirectory()) {
                         visitor.visitDir(details);
                     } else {
@@ -137,12 +140,14 @@ public class ZipFileTree extends AbstractArchiveFileTree {
         private final File originalFile;
         private final ZipArchiveEntry entry;
         private final ZipFile zip;
+        private final boolean preserveLink;
 
-        public DetailsImpl(File originalFile, File expandedDir, ZipArchiveEntry entry, ZipFile zip, AtomicBoolean stopFlag, Chmod chmod) {
+        public DetailsImpl(File originalFile, File expandedDir, ZipArchiveEntry entry, ZipFile zip, AtomicBoolean stopFlag, Chmod chmod, boolean preserveLink) {
             super(chmod, expandedDir, stopFlag);
             this.originalFile = originalFile;
             this.entry = entry;
             this.zip = zip;
+            this.preserveLink = preserveLink;
         }
 
         @Override
@@ -162,29 +167,20 @@ public class ZipFileTree extends AbstractArchiveFileTree {
 
         @Override
         public boolean isSymbolicLink() {
-            return entry.isUnixSymlink();
+            return preserveLink && entry.isUnixSymlink();
         }
 
         @Override
-        public String getSymbolicLinkTarget() {
+        public String getSymbolicLinkTarget() { //TODO: cache
             if (isSymbolicLink()) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                copyTo(baos);
-                return baos.toString();
+                try (InputStream is = open()) {
+                    return IOUtils.toString(is, StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             } else {
                 throw new GradleException("Not a symbolic link: " + getDisplayName() + ".");
             }
-        }
-
-        @Override
-        public boolean copySymlinkTo(File target) {
-            Path targetPath = new File(getSymbolicLinkTarget().replace("/", File.separator)).toPath();
-            try {
-                Files.createSymbolicLink(target.toPath(), targetPath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return true;
         }
 
         @Override

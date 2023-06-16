@@ -15,12 +15,30 @@
  */
 package org.gradle.api.file;
 
+import java.io.File;
+import java.io.OutputStream;
+
 /**
  * Provides access to details about a file or directory being visited by a {@link FileVisitor}.
  *
  * @see FileTree#visit(groovy.lang.Closure)
  */
-public interface FileVisitDetails extends FileTreeElement {
+public interface FileVisitDetails extends ReadOnlyFileTreeElement {
+    /**
+     * Returns the file being visited.
+     * Note that this may be a copy of the original file (e.g. when visiting an archive).
+     *
+     * @return The file. Never returns null.
+     */
+    File getFile();
+
+    /**
+     * Copies the content of this file to an output stream. Generally, calling this method is more performant than
+     * calling {@code new FileInputStream(getFile())}.
+     *
+     * @param output The output stream to write to. The caller is responsible for closing this stream.
+     */
+    void copyTo(OutputStream output);
 
     /**
      * Requests that file visiting terminate after the current file.

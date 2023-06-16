@@ -16,10 +16,10 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.analyzer;
 
-import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.internal.tasks.compile.incremental.deps.ClassAnalysis;
 import org.gradle.internal.hash.HashCode;
 
 public interface ClassDependenciesAnalyzer {
-    ClassAnalysis getClassAnalysis(HashCode classFileHash, FileTreeElement classFile);
+    ClassAnalysis getClassAnalysis(HashCode classFileHash, FileVisitDetails classFile); //FIXME
 }

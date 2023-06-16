@@ -25,9 +25,9 @@ import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.ExpandDetails;
 import org.gradle.api.file.FileCopyDetails;
-import org.gradle.api.file.FileTreeElement;
-import org.gradle.api.provider.Property;
 import org.gradle.api.file.LinksStrategy;
+import org.gradle.api.file.ReadOnlyFileTreeElement;
+import org.gradle.api.provider.Property;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.util.internal.ClosureBackedAction;
@@ -133,7 +133,7 @@ public abstract class DelegatingCopySpecInternal implements CopySpecInternal {
     }
 
     @Override
-    public CopySpec include(Spec<FileTreeElement> includeSpec) {
+    public CopySpec include(Spec<ReadOnlyFileTreeElement> includeSpec) {
         return getDelegateCopySpec().include(includeSpec);
     }
 
@@ -153,7 +153,7 @@ public abstract class DelegatingCopySpecInternal implements CopySpecInternal {
     }
 
     @Override
-    public CopySpec exclude(Spec<FileTreeElement> excludeSpec) {
+    public CopySpec exclude(Spec<ReadOnlyFileTreeElement> excludeSpec) {
         return getDelegateCopySpec().exclude(excludeSpec);
     }
 

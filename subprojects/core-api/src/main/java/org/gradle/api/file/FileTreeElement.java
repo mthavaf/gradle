@@ -15,20 +15,14 @@
  */
 package org.gradle.api.file;
 
-import org.gradle.api.Incubating;
-
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.StandardCopyOption;
 
 /**
  * Information about a file in a directory/file tree.
  */
-public interface FileTreeElement {
+public interface FileTreeElement extends ReadOnlyFileTreeElement {
     /**
      * Returns the file being visited.
      *
@@ -37,42 +31,16 @@ public interface FileTreeElement {
     File getFile();
 
     /**
-     * Returns true if this element is a directory, or false if this element is a regular file.
-     * Returns true if this element is a symbolic link to a directory.
-     *
-     * @return true if this element is a directory.
-     */
-    boolean isDirectory();
-
-    /**
-     * @return true if this element is a symbolic link.
-     */
-    boolean isSymbolicLink(); //TODO: is it nessesary?
-
-    //FIXME: use relative path?
-    String getSymbolicLinkTarget();
-
-    /**
-     * Returns the last modified time of this file at the time of file traversal.
-     *
-     * @return The last modified time.
-     */
-    long getLastModified();
-
-    /**
-     * Returns the size of this file at the time of file traversal.
-     *
-     * @return The size, in bytes.
-     */
-    long getSize();
-
-    /**
      * Opens this file as an input stream. Generally, calling this method is more performant than calling {@code new
      * FileInputStream(getFile())}.
      *
      * @return The input stream. Never returns null. The caller is responsible for closing this stream.
+     * @deprecated to be removed in 9.0. Use copyTo(OutputStream) instead.
      */
-    InputStream open();
+    @Deprecated
+    default InputStream open() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Copies the content of this file to an output stream. Generally, calling this method is more performant than
@@ -87,48 +55,10 @@ public interface FileTreeElement {
      *
      * @param target the target file.
      * @return true if this file was copied, false if it was up-to-date
+     * @deprecated to be removed in 9.0. Use FileCopyDetails.copyTo(OutputStream) instead.
      */
-    boolean copyTo(File target);
-
-    default boolean copySymlinkTo(File target) { //FIXME: shouldn't be here
-        try {
-            Files.copy(getFile().toPath(), target.toPath(), StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING, LinkOption.NOFOLLOW_LINKS);
-            return true;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    @Deprecated
+    default boolean copyTo(File target) {
+        throw new UnsupportedOperationException();
     }
-
-    /**
-     * Returns the base name of this file.
-     *
-     * @return The name. Never returns null.
-     */
-    String getName();
-
-    /**
-     * Returns the path of this file, relative to the root of the containing file tree. Always uses '/' as the hierarchy
-     * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
-     *
-     * @return The path. Never returns null.
-     */
-    String getPath();
-
-    /**
-     * Returns the path of this file, relative to the root of the containing file tree.
-     *
-     * @return The path. Never returns null.
-     */
-    RelativePath getRelativePath();
-
-    int getMode();
-
-    /**
-     * Provides a read-only view of access permissions of this file.
-     * For details see {@link FilePermissions}.
-     *
-     * @since 8.3
-     */
-    @Incubating
-    FilePermissions getImmutablePermissions();
 }

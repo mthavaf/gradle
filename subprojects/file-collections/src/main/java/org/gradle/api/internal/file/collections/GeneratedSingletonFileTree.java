@@ -17,20 +17,22 @@ package org.gradle.api.internal.file.collections;
 
 import com.google.common.io.Files;
 import org.gradle.api.Action;
+import org.gradle.api.GradleException;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.RelativePath;
-import org.gradle.api.internal.file.AbstractFileTreeElement;
+import org.gradle.api.internal.file.AbstractReadOnlyFileTreeElement;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Factory;
 import org.gradle.internal.file.Chmod;
 import org.gradle.internal.io.StreamByteBuffer;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
+import org.gradle.util.internal.GFileUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
@@ -85,7 +87,7 @@ public class GeneratedSingletonFileTree implements FileSystemMirroringFileTree, 
         return createFileInstance(fileName);
     }
 
-    public File getFile() {
+    private File getFile() {
         return new FileVisitDetailsImpl(fileName, contentWriter, fileSystem).getFile();
     }
 
@@ -109,17 +111,18 @@ public class GeneratedSingletonFileTree implements FileSystemMirroringFileTree, 
         visitor.visitFile(fileVisitDetails);
     }
 
-    private class FileVisitDetailsImpl extends AbstractFileTreeElement implements FileVisitDetails {
+    private class FileVisitDetailsImpl extends AbstractReadOnlyFileTreeElement implements FileVisitDetails {
         private final String fileName;
         private final Action<OutputStream> generator;
         private long lastModified;
         private long size;
         private File file;
+        private Chmod chmod;
 
         public FileVisitDetailsImpl(String fileName, Action<OutputStream> generator, Chmod chmod) {
-            super(chmod);
             this.fileName = fileName;
             this.generator = generator;
+            this.chmod = chmod;
         }
 
         @Override
@@ -133,12 +136,24 @@ public class GeneratedSingletonFileTree implements FileSystemMirroringFileTree, 
         }
 
         @Override
-        public File getFile() {
+        public File getFile() { //FIXME: refactor
             if (file == null) {
                 file = createFileInstance(fileName);
                 if (!file.exists()) {
                     fileGenerationListener.execute(file);
-                    copyTo(file);
+                    try {
+                        if (isDirectory()) {
+                            GFileUtils.mkdirs(file);
+                        } else {
+                            GFileUtils.mkdirs(file.getParentFile());
+                            try (FileOutputStream outputStream = new FileOutputStream(file)) {
+                                generator.execute(outputStream);
+                            }
+                        }
+                        chmod.chmod(file, getMode());
+                    } catch (Exception e) {
+                        throw new GradleException(String.format("Could not copy %s to '%s'.", getDisplayName(), file), e);
+                    }
                 } else {
                     updateFileOnlyWhenGeneratedContentChanges();
                 }
@@ -200,7 +215,7 @@ public class GeneratedSingletonFileTree implements FileSystemMirroringFileTree, 
             return false;
         }
 
-        @Override
+        @Override //FIXME
         public String getSymbolicLinkTarget() {
             return null;
         }
@@ -215,11 +230,6 @@ public class GeneratedSingletonFileTree implements FileSystemMirroringFileTree, 
         public long getSize() {
             getFile();
             return size;
-        }
-
-        @Override
-        public InputStream open() {
-            throw new UnsupportedOperationException();
         }
 
         @Override
