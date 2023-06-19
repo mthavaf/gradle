@@ -35,8 +35,7 @@ class KotlinAndroidDeprecations extends BaseDeprecations implements WithKotlinDe
             "If you're interested in inheriting the dependencies from the Configuration you are adding, you should use Configuration#extendsFrom instead. " +
             String.format(RECOMMENDATION,"information",  DOC_REGISTRY.getDslRefForProperty("org.gradle.api.artifacts.Configuration", "extendsFrom(org.gradle.api.artifacts.Configuration[])"))
 
-    void expectKotlinConfigurationAsDependencyDeprecation(String version) {
-        VersionNumber kotlinVersionNumber = VersionNumber.parse(version)
+    void expectKotlinConfigurationAsDependencyDeprecation(VersionNumber kotlinVersionNumber) {
         runner.expectLegacyDeprecationWarningIf(kotlinVersionNumber < KOTLIN_VERSION_WITHOUT_CONFIGURATION_DEPENDENCY, CONFIGURATION_AS_DEPENDENCY_DEPRECATION)
     }
 

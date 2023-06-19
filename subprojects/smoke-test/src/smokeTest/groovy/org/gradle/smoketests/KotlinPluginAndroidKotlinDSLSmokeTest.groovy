@@ -49,7 +49,7 @@ class KotlinPluginAndroidKotlinDSLSmokeTest extends AbstractSmokeTest {
         def runner = createRunner(parallelTasksInProject, kotlinPluginVersionNumber, androidPluginVersionNumber, 'clean', ':app:testDebugUnitTestCoverage')
         def result = useAgpVersion(androidPluginVersion, runner)
             .deprecations(KotlinAndroidDeprecations) {
-                expectKotlinConfigurationAsDependencyDeprecation(kotlinPluginVersion)
+                expectKotlinConfigurationAsDependencyDeprecation(kotlinPluginVersionNumber)
                 expectAndroidOrKotlinWorkerSubmitDeprecation(androidPluginVersionNumber, parallelTasksInProject, kotlinPluginVersionNumber)
                 expectReportDestinationPropertyDeprecation(androidPluginVersion)
                 expectKotlinCompileDestinationDirPropertyDeprecation(kotlinPluginVersionNumber)

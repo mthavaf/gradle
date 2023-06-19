@@ -16,11 +16,10 @@
 
 package org.gradle.smoketests
 
-
+import org.gradle.api.JavaVersion
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
 import org.gradle.util.internal.VersionNumber
 
-import static org.gradle.api.internal.DocumentationRegistry.RECOMMENDATION
 import static org.gradle.internal.reflect.validation.Severity.WARNING
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE
