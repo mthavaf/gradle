@@ -136,7 +136,7 @@ abstract class AbstractKotlinPluginSmokeTest extends AbstractPluginValidatingSmo
         return pluginId.contains('android')
     }
 
-    protected registerValidationFailure(PluginValidation pluginValidation) {
+    protected registerValidationFailure(org.gradle.smoketests.WithPluginValidation.PluginValidation pluginValidation) {
         pluginValidation.failsWith(nestedTypeUnsupported {
             type('org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest')
                     .property('environment')
