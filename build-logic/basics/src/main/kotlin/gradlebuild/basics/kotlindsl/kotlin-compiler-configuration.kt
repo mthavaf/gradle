@@ -17,11 +17,13 @@
 package gradlebuild.basics.kotlindsl
 
 import org.gradle.kotlin.dsl.*
+import org.jetbrains.kotlin.config.AnalysisFlags
 import org.jetbrains.kotlin.config.ApiVersion
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.config.JvmAnalysisFlags
+import org.jetbrains.kotlin.config.JvmClosureGenerationScheme
 import org.jetbrains.kotlin.config.JvmDefaultMode
 import org.jetbrains.kotlin.config.LanguageVersion
 import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
@@ -44,6 +46,7 @@ fun KotlinCompile.configureKotlinCompilerForGradleBuild() {
             "-java-parameters",
             "-Xsam-conversions=class",
             "-Xskip-metadata-version-check",
+            "-Xjvm-default=all",
         )
     }
 }
@@ -54,17 +57,19 @@ fun CompilerConfiguration.configureKotlinCompilerForGradleBuild() {
     put(
         CommonConfigurationKeys.LANGUAGE_VERSION_SETTINGS,
         LanguageVersionSettingsImpl(
-            languageVersion = LanguageVersion.KOTLIN_1_4,
-            apiVersion = ApiVersion.KOTLIN_1_4,
+            languageVersion = LanguageVersion.KOTLIN_1_8,
+            apiVersion = ApiVersion.KOTLIN_1_8,
             analysisFlags = mapOf(
                 JvmAnalysisFlags.javaTypeEnhancementState to JavaTypeEnhancementState(
                     Jsr305Settings(ReportLevel.STRICT, ReportLevel.STRICT)
                 ) { ReportLevel.STRICT },
-                JvmAnalysisFlags.jvmDefaultMode to JvmDefaultMode.ENABLE
+                JvmAnalysisFlags.jvmDefaultMode to JvmDefaultMode.ALL_INCOMPATIBLE,
+                AnalysisFlags.skipMetadataVersionCheck to true,
             )
         )
     )
 
+    put(JVMConfigurationKeys.SAM_CONVERSIONS, JvmClosureGenerationScheme.CLASS)
     put(JVMConfigurationKeys.PARAMETERS_METADATA, true)
     put(JVMConfigurationKeys.JVM_TARGET, org.jetbrains.kotlin.config.JvmTarget.JVM_1_8)
 }
