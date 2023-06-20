@@ -165,30 +165,7 @@ class KotlinMultiplatformPluginSmokeTest extends AbstractKotlinPluginSmokeTest {
         ]
     }
 
-    @Override
-    void configureValidation(String testedPluginId, String version) {
-        validatePlugins {
-            alwaysPasses()
-            if (testedPluginId == 'org.jetbrains.kotlin.multiplatform') {
-                buildFile << """
-                    kotlin {
-                        jvm()
-                        js(IR) { browser() }
-                    }
-                """
-            }
-            settingsFile << """
-                pluginManagement {
-                    repositories {
-                        gradlePluginPortal()
-                        google()
-                    }
-                }
-            """
-        }
-    }
-
-    private String replaceCssSupportBlocksInBuildFile(kotlinVersion) {
+    private void replaceCssSupportBlocksInBuildFile(kotlinVersion) {
         Map<String, String> replacementMap = [:]
         if (kotlinVersion >= VersionNumber.parse('1.8.0')) {
             replacementMap['enableCssSupportNew'] = """
