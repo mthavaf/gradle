@@ -1,35 +1,51 @@
 {
     "acceptedApiChanges": [
         {
-            "type": "org.gradle.api.artifacts.component.BuildIdentifier",
-            "member": "Method org.gradle.api.artifacts.component.BuildIdentifier.getBuildPath()",
-            "acceptation": "New API that replaces a deprecated API",
-            "changes": [
-                "Method added to interface"
-            ]
-        },
-        {
-            "type": "org.gradle.api.artifacts.component.ProjectComponentSelector",
-            "member": "Method org.gradle.api.artifacts.component.ProjectComponentSelector.getBuildPath()",
-            "acceptation": "New API that replaces a deprecated API",
-            "changes": [
-                "Method added to interface"
-            ]
-        },
-        {
-            "type": "org.gradle.kotlin.dsl.PropertyExtensionsKt",
-            "member": "Method org.gradle.kotlin.dsl.PropertyExtensionsKt.assign(org.gradle.api.file.FileSystemLocationProperty,java.io.File)",
-            "acceptation": "Binary compatibility check incorrectly detects Kotlin extension methods",
+            "type": "org.gradle.kotlin.dsl.DependencyHandlerScope",
+            "member": "Method org.gradle.kotlin.dsl.DependencyHandlerScope.invoke$default(org.gradle.kotlin.dsl.DependencyHandlerScope,org.gradle.api.NamedDomainObjectProvider,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,int,java.lang.Object)",
+            "acceptation": "https://github.com/gradle/gradle/issues/24503",
             "changes": [
                 "Method added to public class"
             ]
         },
         {
-            "type": "org.gradle.kotlin.dsl.PropertyExtensionsKt",
-            "member": "Method org.gradle.kotlin.dsl.PropertyExtensionsKt.assign(org.gradle.api.provider.Property,java.lang.Object)",
-            "acceptation": "Binary compatibility check incorrectly detects Kotlin extension methods",
+            "type": "org.gradle.kotlin.dsl.DependencyHandlerScope",
+            "member": "Method org.gradle.kotlin.dsl.DependencyHandlerScope.invoke$default(org.gradle.kotlin.dsl.DependencyHandlerScope,org.gradle.api.NamedDomainObjectProvider,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,kotlin.jvm.functions.Function1,int,java.lang.Object)",
+            "acceptation": "https://github.com/gradle/gradle/issues/24503",
             "changes": [
                 "Method added to public class"
+            ]
+        },
+        {
+            "type": "org.gradle.kotlin.dsl.DependencyHandlerScope",
+            "member": "Method org.gradle.kotlin.dsl.DependencyHandlerScope.invoke(org.gradle.api.NamedDomainObjectProvider,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String)",
+            "acceptation": "https://github.com/gradle/gradle/issues/24503",
+            "changes": [
+                "Method added to public class"
+            ]
+        },
+        {
+            "type": "org.gradle.kotlin.dsl.DependencyHandlerScope",
+            "member": "Method org.gradle.kotlin.dsl.DependencyHandlerScope.invoke(org.gradle.api.NamedDomainObjectProvider,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,kotlin.jvm.functions.Function1)",
+            "acceptation": "https://github.com/gradle/gradle/issues/24503",
+            "changes": [
+                "Method added to public class"
+            ]
+        },
+        {
+            "type": "org.gradle.kotlin.dsl.DependencyHandlerScope",
+            "member": "Method org.gradle.kotlin.dsl.DependencyHandlerScope.invoke(org.gradle.api.NamedDomainObjectProvider,org.gradle.api.artifacts.ModuleDependency,kotlin.jvm.functions.Function1)",
+            "acceptation": "https://github.com/gradle/gradle/issues/24503",
+            "changes": [
+                "Method added to public class"
+            ]
+        },
+        {
+            "type": "org.gradle.util.SingleMessageLogger",
+            "member": "Class org.gradle.util.SingleMessageLogger",
+            "acceptation": "Changed the signature of internal method",
+            "changes": [
+                "org.gradle.internal.deprecation.DeprecationLogger.init(org.gradle.internal.featurelifecycle.UsageLocationReporter,org.gradle.api.logging.configuration.WarningMode,org.gradle.internal.operations.BuildOperationProgressEventEmitter)"
             ]
         }
     ]
