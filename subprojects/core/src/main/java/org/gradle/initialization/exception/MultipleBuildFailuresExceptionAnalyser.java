@@ -19,9 +19,10 @@ package org.gradle.initialization.exception;
 import org.gradle.execution.MultipleBuildFailures;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 /**
  * An exception analyser that deals specifically with MultipleBuildFailures and transforms each component failure.
@@ -45,7 +46,7 @@ public class MultipleBuildFailuresExceptionAnalyser implements ExceptionAnalyser
             return null;
         }
 
-        List<Throwable> result = new ArrayList<>(failures.size());
+        Set<Throwable> result = Collections.newSetFromMap(new IdentityHashMap<>(failures.size()));
         for (Throwable failure : failures) {
             if (failure instanceof MultipleBuildFailures) {
                 for (Throwable cause : ((MultipleBuildFailures) failure).getCauses()) {
@@ -55,10 +56,12 @@ public class MultipleBuildFailuresExceptionAnalyser implements ExceptionAnalyser
                 collector.collectFailures(failure, result);
             }
         }
-        if (result.size() == 1 && result.get(0) instanceof RuntimeException) {
-            return (RuntimeException) result.get(0);
-        } else {
-            return new MultipleBuildFailures(result);
+        if (result.size() == 1) {
+            Throwable single = result.iterator().next();
+            if (single instanceof RuntimeException) {
+                return (RuntimeException) single;
+            }
         }
+        return new MultipleBuildFailures(result);
     }
 }
